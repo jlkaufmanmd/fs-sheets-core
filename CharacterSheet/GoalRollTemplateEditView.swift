@@ -198,3 +198,4 @@ struct GoalRollTemplateEditView: View {
         dismiss()
     }
 }
+

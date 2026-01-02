@@ -82,3 +82,4 @@ struct SearchableTemplatePickerSheet<Item: Identifiable>: View {
         }
     }
 }
+

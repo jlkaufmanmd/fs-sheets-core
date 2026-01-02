@@ -334,3 +334,4 @@ struct GoalRollEditView: View {
         syncSkillModeFromEffective()
     }
 }
+

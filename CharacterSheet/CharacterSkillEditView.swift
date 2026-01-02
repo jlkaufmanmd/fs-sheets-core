@@ -192,3 +192,4 @@ struct CharacterSkillEditView: View {
         skill.overrideUserKeywords = ""
     }
 }
+

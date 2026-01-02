@@ -275,3 +275,4 @@ struct CharacterDetailView: View {
         }
     }
 }
+

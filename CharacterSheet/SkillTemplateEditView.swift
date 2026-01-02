@@ -93,3 +93,4 @@ struct SkillTemplateEditView: View {
         dismiss()
     }
 }
+

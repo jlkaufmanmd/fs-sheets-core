@@ -293,3 +293,4 @@ class CharacterGoalRoll: KeywordProvider {
         return KeywordUtil.make(base: base, user: effectiveUserKeywords)
     }
 }
+
