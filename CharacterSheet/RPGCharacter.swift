@@ -1,15 +1,10 @@
-//
-//  RPGCharacter.swift
-//  CharacterSheet
-//
-//  Created by Jacob Kaufman on 12/30/25.
-//
-
 import Foundation
 import SwiftData
 
 @Model
 class RPGCharacter {
+    @Attribute(.unique) var id: UUID
+
     var name: String
     var characterDescription: String
 
@@ -23,6 +18,7 @@ class RPGCharacter {
     var goalRolls: [CharacterGoalRoll]
 
     init(name: String, characterDescription: String = "") {
+        self.id = UUID()
         self.name = name
         self.characterDescription = characterDescription
         self.stats = []
@@ -32,7 +28,9 @@ class RPGCharacter {
 }
 
 @Model
-class Stat {
+class Stat: KeywordProvider {
+    @Attribute(.unique) var id: UUID
+
     var name: String
     var value: Int
 
@@ -51,6 +49,7 @@ class Stat {
         displayOrder: Int,
         isDeletable: Bool
     ) {
+        self.id = UUID()
         self.name = name
         self.value = value
         self.statType = statType
@@ -58,9 +57,7 @@ class Stat {
         self.displayOrder = displayOrder
         self.isDeletable = isDeletable
     }
-}
 
-extension Stat {
     var minimumValue: Int {
         if KeywordUtil.normalize(statType) == "attribute" {
             return category == "Occult" ? 0 : 1
@@ -70,32 +67,24 @@ extension Stat {
     }
 
     /// Keywords intrinsic to this Stat (no user keywords yet).
-    /// Using "implicit" so we can reserve "effective" later for modified values.
     var implicitKeywords: [String] {
         let typeKey = KeywordUtil.normalize(statType)
         let catKey  = KeywordUtil.normalize(category)
         let nameKey = KeywordUtil.normalize(name)
 
-        var keys: [String] = [
-            nameKey,
-            "stat",
-            typeKey,
-            catKey
-        ]
+        var base = [nameKey, "stat", typeKey, catKey]
 
-        if typeKey == "attribute" { keys.append("attribute") }
-        if typeKey == "skill" { keys.append("skill") }
+        if typeKey == "attribute" { base.append("attribute") }
+        if typeKey == "skill" { base.append("skill") }
 
         if catKey.contains("natural") {
-            keys.append("natural")
-            keys.append("natural skill")
+            base.append("natural")
+            base.append("natural skill")
         }
 
-        // No user keywords for Stat yet, so just normalize + dedupe
-        return Array(Set(keys.map(KeywordUtil.normalize))).sorted()
+        return Array(Set(base.map(KeywordUtil.normalize))).sorted()
     }
-}
 
-extension Stat: KeywordProvider {
+    // KeywordProvider
     var keywordsForRules: [String] { implicitKeywords }
 }

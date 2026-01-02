@@ -3,6 +3,7 @@ import SwiftData
 
 @Model
 class RulesLibrary {
+    @Attribute(.unique) var id: UUID
     var createdDate: Date
 
     @Relationship(deleteRule: .cascade)
@@ -12,6 +13,7 @@ class RulesLibrary {
     var skillTemplates: [SkillTemplate]
 
     init() {
+        self.id = UUID()
         self.createdDate = Date()
         self.goalRollTemplates = []
         self.skillTemplates = []
@@ -22,7 +24,9 @@ class RulesLibrary {
 
 @Model
 class SkillTemplate: KeywordProvider {
-    @Attribute(.unique) var name: String
+    @Attribute(.unique) var id: UUID
+
+    var name: String
     var category: String // "Learned Skills", "Lores", "Tongues"
     var templateDescription: String
     var userKeywords: String
@@ -33,13 +37,13 @@ class SkillTemplate: KeywordProvider {
         templateDescription: String = "",
         userKeywords: String = ""
     ) {
+        self.id = UUID()
         self.name = name
         self.category = category
         self.templateDescription = templateDescription
         self.userKeywords = userKeywords
     }
 
-    /// Keywords intrinsic to the template (name/category + user keywords).
     var implicitKeywords: [String] {
         KeywordUtil.make(
             base: [name, "skill", "stat", category],
@@ -47,12 +51,14 @@ class SkillTemplate: KeywordProvider {
         )
     }
 
-    /// Standardized keyword surface for the rules engine.
+    // KeywordProvider
     var keywordsForRules: [String] { implicitKeywords }
 }
 
 @Model
 class CharacterSkill: KeywordProvider {
+    @Attribute(.unique) var id: UUID
+
     var value: Int
 
     var isBranched: Bool
@@ -67,24 +73,39 @@ class CharacterSkill: KeywordProvider {
     var character: RPGCharacter?
 
     init(template: SkillTemplate, value: Int = 0) {
+        self.id = UUID()
+
         self.template = template
         self.value = value
+
         self.isBranched = false
         self.branchedDate = nil
+
         self.overrideName = ""
         self.overrideCategory = ""
         self.overrideDescription = ""
         self.overrideUserKeywords = ""
     }
 
-    var effectiveName: String { isBranched ? overrideName : (template?.name ?? overrideName) }
-    var effectiveCategory: String { isBranched ? overrideCategory : (template?.category ?? overrideCategory) }
-    var effectiveDescription: String { isBranched ? overrideDescription : (template?.templateDescription ?? overrideDescription) }
-    var effectiveUserKeywords: String { isBranched ? overrideUserKeywords : (template?.userKeywords ?? overrideUserKeywords) }
+    var effectiveName: String {
+        isBranched ? overrideName : (template?.name ?? overrideName)
+    }
+
+    var effectiveCategory: String {
+        isBranched ? overrideCategory : (template?.category ?? overrideCategory)
+    }
+
+    var effectiveDescription: String {
+        isBranched ? overrideDescription : (template?.templateDescription ?? overrideDescription)
+    }
+
+    var effectiveUserKeywords: String {
+        isBranched ? overrideUserKeywords : (template?.userKeywords ?? overrideUserKeywords)
+    }
 
     var minimumValue: Int { 0 }
 
-    /// Keywords for THIS character's skill instance (honors branching overrides).
+    // KeywordProvider
     var keywordsForRules: [String] {
         KeywordUtil.make(
             base: [effectiveName, "skill", "stat", effectiveCategory],
@@ -102,7 +123,9 @@ class GoalRollTemplate: KeywordProvider {
         case learned = "Learned/Lore/Tongue"
     }
 
-    @Attribute(.unique) var name: String
+    @Attribute(.unique) var id: UUID
+
+    var name: String
     var templateDescription: String
     var baseModifier: Int
     var userKeywords: String
@@ -130,6 +153,8 @@ class GoalRollTemplate: KeywordProvider {
         defaultNaturalSkillName: String = "",
         defaultLearnedSkillTemplate: SkillTemplate? = nil
     ) {
+        self.id = UUID()
+
         self.name = name
         self.templateDescription = templateDescription
         self.baseModifier = baseModifier
@@ -148,7 +173,6 @@ class GoalRollTemplate: KeywordProvider {
         set { defaultSkillModeRaw = newValue.rawValue }
     }
 
-    /// Keywords intrinsic to the template (name + user keywords).
     var implicitKeywords: [String] {
         KeywordUtil.make(
             base: [name, "goal roll"],
@@ -156,12 +180,14 @@ class GoalRollTemplate: KeywordProvider {
         )
     }
 
-    /// Standardized keyword surface for the rules engine.
+    // KeywordProvider
     var keywordsForRules: [String] { implicitKeywords }
 }
 
 @Model
 class CharacterGoalRoll: KeywordProvider {
+    @Attribute(.unique) var id: UUID
+
     var isBranched: Bool
     var branchedDate: Date?
 
@@ -185,6 +211,8 @@ class CharacterGoalRoll: KeywordProvider {
         naturalSkillStat: Stat? = nil,
         characterSkill: CharacterSkill? = nil
     ) {
+        self.id = UUID()
+
         self.template = template
         self.attributeStat = attributeStat
         self.naturalSkillStat = naturalSkillStat
@@ -218,7 +246,7 @@ class CharacterGoalRoll: KeywordProvider {
         if isBranched { return attributeStat }
         guard let character, let t = template else { return nil }
         return character.stats.first(where: {
-            $0.statType == "attribute" &&
+            KeywordUtil.normalize($0.statType) == "attribute" &&
             $0.category == t.defaultAttributeCategory &&
             $0.name.caseInsensitiveCompare(t.defaultAttributeName) == .orderedSame
         })
@@ -229,7 +257,7 @@ class CharacterGoalRoll: KeywordProvider {
         guard let character, let t = template else { return nil }
         guard t.defaultSkillMode == .natural else { return nil }
         return character.stats.first(where: {
-            $0.statType == "skill" &&
+            KeywordUtil.normalize($0.statType) == "skill" &&
             $0.category == "Natural Skills" &&
             $0.name.caseInsensitiveCompare(t.defaultNaturalSkillName) == .orderedSame
         })
@@ -238,27 +266,15 @@ class CharacterGoalRoll: KeywordProvider {
     var effectiveCharacterSkill: CharacterSkill? {
         if isBranched { return characterSkill }
         guard let character, let t = template else { return nil }
-        guard t.defaultSkillMode == .learned,
-              let learnedTemplate = t.defaultLearnedSkillTemplate
-        else { return nil }
-
-        // Find existing instance on this character
-        if let existing = character.learnedSkills.first(where: { $0.template?.persistentModelID == learnedTemplate.persistentModelID }) {
-            return existing
-        }
-
-        // No side effects in getters: creation happens in UI actions.
-        return nil
+        guard t.defaultSkillMode == .learned, let learnedTemplate = t.defaultLearnedSkillTemplate else { return nil }
+        return character.learnedSkills.first(where: { $0.template?.id == learnedTemplate.id })
     }
 
     var goalValue: Int {
         let attrValue = effectiveAttributeStat?.value ?? 0
-        let skillValue: Int
-        if effectiveSkillMode == .natural {
-            skillValue = effectiveNaturalSkillStat?.value ?? 0
-        } else {
-            skillValue = effectiveCharacterSkill?.value ?? 0
-        }
+        let skillValue: Int = (effectiveSkillMode == .natural)
+            ? (effectiveNaturalSkillStat?.value ?? 0)
+            : (effectiveCharacterSkill?.value ?? 0)
         return attrValue + skillValue + effectiveBaseModifier
     }
 
@@ -267,12 +283,11 @@ class CharacterGoalRoll: KeywordProvider {
         return effectiveCharacterSkill?.effectiveName
     }
 
-    /// Keywords for THIS character's goal roll instance (honors branching overrides),
-    /// and includes formula targets to help matching.
+    // KeywordProvider
     var keywordsForRules: [String] {
         var base = [effectiveName, "goal roll"]
 
-        if let attr = effectiveAttributeStat?.name { base.append(attr) }
+        if let attrName = effectiveAttributeStat?.name { base.append(attrName) }
         if let s = skillName { base.append(s) }
 
         return KeywordUtil.make(base: base, user: effectiveUserKeywords)

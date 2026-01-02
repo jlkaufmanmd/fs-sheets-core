@@ -6,8 +6,12 @@ struct CharacterDetailView: View {
     @Query private var libraries: [RulesLibrary]
 
     @Bindable var character: RPGCharacter
+
     @State private var showingAddSkill = false
     @State private var showingAddGoalRoll = false
+
+    @State private var showingSkillPicker = false
+    @State private var showingGoalRollPicker = false
 
     @State private var showingTemplateError = false
     @State private var templateErrorMessage = ""
@@ -16,7 +20,6 @@ struct CharacterDetailView: View {
 
     // Required display order
     private let attributeCategoryOrder = ["Body", "Mind", "Spirit", "Occult"]
-    private let learnedSkillCategoryOrder = ["Learned Skills", "Lores", "Tongues"]
 
     var body: some View {
         List {
@@ -62,7 +65,11 @@ struct CharacterDetailView: View {
             }
 
             Section("Learned Skills / Lores / Tongues") {
-                ForEach(learnedSkillsSorted()) { skill in
+                ForEach(character.learnedSkills.sorted(by: {
+                    $0.effectiveCategory < $1.effectiveCategory ||
+                    ($0.effectiveCategory == $1.effectiveCategory &&
+                     $0.effectiveName.localizedCaseInsensitiveCompare($1.effectiveName) == .orderedAscending)
+                })) { skill in
                     HStack {
                         NavigationLink {
                             CharacterSkillEditView(skill: skill, library: library)
@@ -84,42 +91,22 @@ struct CharacterDetailView: View {
                     }
                 }
 
-                // ✅ Main-sheet dropdown (organized by category)
-                Menu {
-                    Button {
-                        showingAddSkill = true
-                    } label: {
-                        Label("New…", systemImage: "plus")
-                    }
-
-                    Divider()
-
-                    ForEach(learnedSkillCategoryOrder, id: \.self) { category in
-                        let templates = skillTemplates(in: category)
-                        if !templates.isEmpty {
-                            Menu(category) {
-                                ForEach(templates) { t in
-                                    Button(t.name) {
-                                        addLearnedSkillFromTemplate(t)
-                                    }
-                                }
-                            }
-                        }
-                    }
+                Button {
+                    showingSkillPicker = true
                 } label: {
-                    Label("Add Learned Skill / Lore / Tongue", systemImage: "plus.circle.fill")
+                    Label("Add Skill / Lore / Tongue", systemImage: "plus.circle.fill")
                 }
             }
 
             Section("Goal Rolls") {
-                ForEach(character.goalRolls.sorted { $0.effectiveName.localizedCaseInsensitiveCompare($1.effectiveName) == .orderedAscending }) { roll in
+                ForEach(character.goalRolls.sorted { $0.effectiveName < $1.effectiveName }) { roll in
                     HStack {
                         NavigationLink {
                             GoalRollEditView(roll: roll, library: library)
                         } label: {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(roll.effectiveName).font(.headline)
-                                if let attr = roll.attributeStat, let s = roll.skillName {
+                                if let attr = roll.effectiveAttributeStat, let s = roll.skillName {
                                     Text("\(attr.name) + \(s)")
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
@@ -136,33 +123,78 @@ struct CharacterDetailView: View {
                     }
                 }
 
-                // ✅ Main-sheet dropdown
-                Menu {
-                    Button {
-                        showingAddGoalRoll = true
-                    } label: {
-                        Label("New…", systemImage: "plus")
-                    }
-
-                    Divider()
-
-                    ForEach(goalRollTemplatesSorted()) { t in
-                        Button(t.name) {
-                            addGoalRollFromTemplate(t)
-                        }
-                    }
+                Button {
+                    showingGoalRollPicker = true
                 } label: {
                     Label("Add Goal Roll", systemImage: "plus.circle.fill")
                 }
             }
         }
         .navigationTitle("Character Sheet")
+
+        // Existing “create new” screens
         .sheet(isPresented: $showingAddSkill) {
             AddCharacterSkillView(character: character, library: library, isPresented: $showingAddSkill)
         }
         .sheet(isPresented: $showingAddGoalRoll) {
             AddGoalRollView(character: character, library: library, isPresented: $showingAddGoalRoll)
         }
+
+        // NEW searchable pickers
+        .sheet(isPresented: $showingSkillPicker) {
+            NavigationStack {
+                if let library {
+                    VStack(spacing: 0) {
+                        // optional "New..." convenience
+                        Button {
+                            showingSkillPicker = false
+                            showingAddSkill = true
+                        } label: {
+                            Label("New…", systemImage: "plus")
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .padding()
+                        .background(.ultraThinMaterial)
+
+                        SkillTemplatePickerSheet(
+                            templates: library.skillTemplates,
+                            onPick: { t in addLearnedSkillFromTemplate(t) }
+                        )
+                    }
+                } else {
+                    Text("Rules library not available yet.")
+                        .foregroundStyle(.secondary)
+                        .padding()
+                }
+            }
+        }
+        .sheet(isPresented: $showingGoalRollPicker) {
+            NavigationStack {
+                if let library {
+                    VStack(spacing: 0) {
+                        Button {
+                            showingGoalRollPicker = false
+                            showingAddGoalRoll = true
+                        } label: {
+                            Label("New…", systemImage: "plus")
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .padding()
+                        .background(.ultraThinMaterial)
+
+                        GoalRollTemplatePickerSheet(
+                            templates: library.goalRollTemplates,
+                            onPick: { t in addGoalRollFromTemplate(t) }
+                        )
+                    }
+                } else {
+                    Text("Rules library not available yet.")
+                        .foregroundStyle(.secondary)
+                        .padding()
+                }
+            }
+        }
+
         .alert("Template can’t be applied", isPresented: $showingTemplateError) {
             Button("OK", role: .cancel) { }
         } message: {
@@ -174,49 +206,20 @@ struct CharacterDetailView: View {
 
     private func attributes(in category: String) -> [Stat] {
         character.stats
-            .filter { $0.statType == "attribute" && $0.category == category }
+            .filter { KeywordUtil.normalize($0.statType) == "attribute" && $0.category == category }
             .sorted { $0.displayOrder < $1.displayOrder }
     }
 
     private func naturalSkillsSorted() -> [Stat] {
         character.stats
-            .filter { $0.statType == "skill" && $0.category == "Natural Skills" }
+            .filter { KeywordUtil.normalize($0.statType) == "skill" && $0.category == "Natural Skills" }
             .sorted { $0.displayOrder < $1.displayOrder }
-    }
-
-    // MARK: - Learned skills sorting (category order, then name)
-
-    private func learnedSkillsSorted() -> [CharacterSkill] {
-        character.learnedSkills.sorted {
-            let aCatIdx = learnedSkillCategoryOrder.firstIndex(of: $0.effectiveCategory) ?? 999
-            let bCatIdx = learnedSkillCategoryOrder.firstIndex(of: $1.effectiveCategory) ?? 999
-            if aCatIdx != bCatIdx { return aCatIdx < bCatIdx }
-            return $0.effectiveName.localizedCaseInsensitiveCompare($1.effectiveName) == .orderedAscending
-        }
-    }
-
-    // MARK: - Template lists
-
-    private func skillTemplates(in category: String) -> [SkillTemplate] {
-        guard let library else { return [] }
-        return library.skillTemplates
-            .filter { $0.category == category }
-            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-    }
-
-    private func goalRollTemplatesSorted() -> [GoalRollTemplate] {
-        guard let library else { return [] }
-        return library.goalRollTemplates
-            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
 
     // MARK: - Add from template (Skills)
 
     private func addLearnedSkillFromTemplate(_ template: SkillTemplate) {
-        // Prevent duplicates of the same template on a character
-        if character.learnedSkills.contains(where: { $0.template?.persistentModelID == template.persistentModelID }) {
-            return
-        }
+        if character.learnedSkills.contains(where: { $0.template?.id == template.id }) { return }
         let newSkill = CharacterSkill(template: template, value: 0)
         character.learnedSkills.append(newSkill)
     }
@@ -224,18 +227,12 @@ struct CharacterDetailView: View {
     // MARK: - Add from template (Goal Rolls)
 
     private func addGoalRollFromTemplate(_ template: GoalRollTemplate) {
-        // Prevent duplicates of the same template on a character
-        if character.goalRolls.contains(where: { $0.template?.persistentModelID == template.persistentModelID }) {
-            return
-        }
-
-        let wantedAttrName = template.defaultAttributeName.trimmingCharacters(in: .whitespacesAndNewlines)
-        let wantedAttrCat = template.defaultAttributeCategory.trimmingCharacters(in: .whitespacesAndNewlines)
+        if character.goalRolls.contains(where: { $0.template?.id == template.id }) { return }
 
         guard let attr = character.stats.first(where: {
-            $0.statType == "attribute" &&
-            $0.category.caseInsensitiveCompare(wantedAttrCat) == .orderedSame &&
-            $0.name.caseInsensitiveCompare(wantedAttrName) == .orderedSame
+            KeywordUtil.normalize($0.statType) == "attribute" &&
+            $0.category == template.defaultAttributeCategory &&
+            $0.name.caseInsensitiveCompare(template.defaultAttributeName) == .orderedSame
         }) else {
             templateErrorMessage = "“\(template.name)” default attribute wasn’t found on this character: \(template.defaultAttributeCategory) → \(template.defaultAttributeName)."
             showingTemplateError = true
@@ -244,23 +241,17 @@ struct CharacterDetailView: View {
 
         switch template.defaultSkillMode {
         case .natural:
-            let wantedSkillName = template.defaultNaturalSkillName.trimmingCharacters(in: .whitespacesAndNewlines)
             guard let ns = character.stats.first(where: {
-                $0.statType == "skill" &&
-                $0.category.caseInsensitiveCompare("Natural Skills") == .orderedSame &&
-                $0.name.caseInsensitiveCompare(wantedSkillName) == .orderedSame
+                KeywordUtil.normalize($0.statType) == "skill" &&
+                $0.category == "Natural Skills" &&
+                $0.name.caseInsensitiveCompare(template.defaultNaturalSkillName) == .orderedSame
             }) else {
                 templateErrorMessage = "“\(template.name)” default natural skill wasn’t found on this character: \(template.defaultNaturalSkillName)."
                 showingTemplateError = true
                 return
             }
 
-            let roll = CharacterGoalRoll(
-                template: template,
-                attributeStat: attr,
-                naturalSkillStat: ns,
-                characterSkill: nil
-            )
+            let roll = CharacterGoalRoll(template: template, attributeStat: attr, naturalSkillStat: ns, characterSkill: nil)
             character.goalRolls.append(roll)
 
         case .learned:
@@ -270,9 +261,8 @@ struct CharacterDetailView: View {
                 return
             }
 
-            // Ensure the character has a CharacterSkill instance for that template
             let learnedInstance: CharacterSkill
-            if let existing = character.learnedSkills.first(where: { $0.template?.persistentModelID == learnedTemplate.persistentModelID }) {
+            if let existing = character.learnedSkills.first(where: { $0.template?.id == learnedTemplate.id }) {
                 learnedInstance = existing
             } else {
                 let created = CharacterSkill(template: learnedTemplate, value: 0)
@@ -280,12 +270,7 @@ struct CharacterDetailView: View {
                 learnedInstance = created
             }
 
-            let roll = CharacterGoalRoll(
-                template: template,
-                attributeStat: attr,
-                naturalSkillStat: nil,
-                characterSkill: learnedInstance
-            )
+            let roll = CharacterGoalRoll(template: template, attributeStat: attr, naturalSkillStat: nil, characterSkill: learnedInstance)
             character.goalRolls.append(roll)
         }
     }
