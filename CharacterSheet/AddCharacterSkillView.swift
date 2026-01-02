@@ -10,12 +10,11 @@ struct AddCharacterSkillView: View {
     @State private var selectedCategory: String = "Learned Skills"
     private let categories = ["Learned Skills", "Lores", "Tongues"]
 
-    // Two ways to add:
-    // 1) pick existing template
+    // Pick existing template
     @State private var selectedTemplateID: PersistentIdentifier?
     @State private var showingTemplatePicker = false
 
-    // 2) create new template + add
+    // Create new template
     @State private var customName: String = ""
     @State private var customDescription: String = ""
     @State private var customKeywords: String = ""
@@ -47,7 +46,7 @@ struct AddCharacterSkillView: View {
                     }
                     .pickerStyle(.segmented)
                     .onChange(of: selectedCategory) { _, _ in
-                        // keep selection consistent with the visible category
+                        // Keep selection consistent with visible category
                         selectedTemplateID = nil
                     }
                 }
@@ -64,7 +63,8 @@ struct AddCharacterSkillView: View {
                             } else {
                                 Text("None").foregroundStyle(.secondary)
                             }
-                            Image(systemName: "chevron.right").foregroundStyle(.tertiary)
+                            Image(systemName: "chevron.right")
+                                .foregroundStyle(.tertiary)
                         }
                     }
                     .disabled(library == nil || templatesInSelectedCategory.isEmpty)
@@ -77,7 +77,8 @@ struct AddCharacterSkillView: View {
                         Text("No templates in \(selectedCategory) yet.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                    } else if let t = templateByID(selectedTemplateID), !t.templateDescription.isEmpty {
+                    } else if let t = templateByID(selectedTemplateID),
+                              !t.templateDescription.isEmpty {
                         Text(t.templateDescription)
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -149,11 +150,9 @@ struct AddCharacterSkillView: View {
         // 1) Add from selected existing template
         if let t = templateByID(selectedTemplateID) {
             // Prevent duplicates of same template on the character
-            if character.learnedSkills.contains(where: { $0.template?.persistentModelID == t.persistentModelID }) {
-                isPresented = false
-                return
+            if !character.learnedSkills.contains(where: { $0.template?.persistentModelID == t.persistentModelID }) {
+                character.learnedSkills.append(CharacterSkill(template: t, value: 0))
             }
-            character.learnedSkills.append(CharacterSkill(template: t, value: 0))
             isPresented = false
             return
         }
@@ -163,7 +162,8 @@ struct AddCharacterSkillView: View {
         guard !name.isEmpty else { return }
 
         let existing = library.skillTemplates.first(where: {
-            $0.category == selectedCategory && $0.name.caseInsensitiveCompare(name) == .orderedSame
+            $0.category == selectedCategory &&
+            $0.name.caseInsensitiveCompare(name) == .orderedSame
         })
 
         let template: SkillTemplate
