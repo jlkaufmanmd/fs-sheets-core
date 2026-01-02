@@ -5,12 +5,12 @@ struct SkillTemplateEditView: View {
     @Environment(\.dismiss) private var dismiss
     @Bindable var template: SkillTemplate
     var library: RulesLibrary?
-
+    
     @State private var editedName = ""
     @State private var editedDescription = ""
     @State private var editedKeywords = ""
     @State private var showingDuplicateAlert = false
-
+    
     var body: some View {
         NavigationStack {
             Form {
@@ -18,22 +18,22 @@ struct SkillTemplateEditView: View {
                     TextField("Name", text: $editedName)
                         .autocorrectionDisabled()
                 }
-
+                
                 Section("Category") {
                     Text(template.category)
                         .foregroundStyle(.secondary)
                 }
-
+                
                 Section("Description") {
                     TextEditor(text: $editedDescription)
                         .frame(minHeight: 120)
                 }
-
+                
                 Section("Keywords") {
                     TextField("Comma-separated", text: $editedKeywords)
                         .autocorrectionDisabled()
                 }
-
+                
                 Section("Keywords Preview") {
                     let preview = SkillTemplate(
                         name: editedName.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -45,7 +45,7 @@ struct SkillTemplateEditView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-
+                
                 Section {
                     Text("Edits here affect all non-branched character skills using this template.")
                         .font(.caption)
@@ -70,11 +70,11 @@ struct SkillTemplateEditView: View {
             }
         }
     }
-
+    
     private func save() {
         let name = editedName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty else { return }
-
+        
         if let library {
             let dup = library.skillTemplates.contains {
                 $0.persistentModelID != template.persistentModelID &&
@@ -86,7 +86,7 @@ struct SkillTemplateEditView: View {
                 return
             }
         }
-
+        
         template.name = name
         template.templateDescription = editedDescription
         template.userKeywords = editedKeywords

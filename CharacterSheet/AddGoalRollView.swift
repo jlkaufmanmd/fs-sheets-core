@@ -5,48 +5,34 @@ struct AddGoalRollView: View {
     var character: RPGCharacter
     var library: RulesLibrary?
     @Binding var isPresented: Bool
-
-    // Choose existing template (optional)
-    @State private var selectedExistingTemplateID: PersistentIdentifier?
-    @State private var showingGoalRollTemplatePicker = false
-
-    // Editor fields for template creation/update
-    @State private var name: String = ""
-    @State private var descriptionText: String = ""
-    @State private var userKeywords: String = ""
-    @State private var baseModifier: Int = 0
-
-    // Defaults we will write into the template
-    private let attributeCategoryOrder = ["Body", "Mind", "Spirit", "Occult"]
-
+    
+    // Template selection
+    @State private var selectedTemplateID: PersistentIdentifier?
+    @State private var customName: String = ""
+    @State private var showingTemplatePicker = false
+    
+    // Formula selection uses IDs (avoids SwiftData picker/hash weirdness)
     @State private var selectedAttributeID: PersistentIdentifier?
-
     @State private var selectedSkillMode: GoalRollTemplate.SkillMode = .natural
     @State private var selectedNaturalSkillID: PersistentIdentifier?
-
-    @State private var selectedLearnedSkillTemplateID: PersistentIdentifier?
-    @State private var showingLearnedTemplatePicker = false
-
-    private var goalRollTemplatesOrdered: [GoalRollTemplate] {
+    @State private var selectedCharacterSkillID: PersistentIdentifier?
+    
+    // Required display order
+    private let attributeCategoryOrder = ["Body", "Mind", "Spirit", "Occult"]
+    
+    private var templatesSorted: [GoalRollTemplate] {
         guard let library else { return [] }
         return library.goalRollTemplates
             .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
-
-    private var learnedSkillTemplatesOrdered: [SkillTemplate] {
-        guard let library else { return [] }
-        let order = ["Learned Skills", "Lores", "Tongues"]
-        return library.skillTemplates
-            .sorted {
-                let aIdx = order.firstIndex(of: $0.category) ?? 999
-                let bIdx = order.firstIndex(of: $1.category) ?? 999
-                if aIdx != bIdx { return aIdx < bIdx }
-                return $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-            }
+    
+    private func templateByID(_ id: PersistentIdentifier?) -> GoalRollTemplate? {
+        guard let id else { return nil }
+        return templatesSorted.first { $0.persistentModelID == id }
     }
-
+    
     private var attributesOrdered: [Stat] {
-        let attrs = character.stats.filter { KeywordUtil.normalize($0.statType) == "attribute" }
+        let attrs = character.stats.filter { $0.statType == "attribute" }
         return attrs.sorted {
             let aIdx = attributeCategoryOrder.firstIndex(of: $0.category) ?? 999
             let bIdx = attributeCategoryOrder.firstIndex(of: $1.category) ?? 999
@@ -55,259 +41,179 @@ struct AddGoalRollView: View {
             return $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
         }
     }
-
+    
     private var naturalSkillsOrdered: [Stat] {
         character.stats
-            .filter { KeywordUtil.normalize($0.statType) == "skill" && $0.category == "Natural Skills" }
+            .filter { $0.statType == "skill" && $0.category == "Natural Skills" }
             .sorted { $0.displayOrder < $1.displayOrder }
     }
-
-    private func templateByID(_ id: PersistentIdentifier?) -> GoalRollTemplate? {
-        guard let id, let library else { return nil }
-        return library.goalRollTemplates.first { $0.persistentModelID == id }
+    
+    private var learnedSkillsGrouped: [(String, [CharacterSkill])] {
+        let categories = ["Learned Skills", "Lores", "Tongues"]
+        return categories.compactMap { cat in
+            let subset = character.learnedSkills
+                .filter { $0.effectiveCategory == cat }
+                .sorted { $0.effectiveName.localizedCaseInsensitiveCompare($1.effectiveName) == .orderedAscending }
+            return subset.isEmpty ? nil : (cat, subset)
+        }
     }
-
+    
     private func statByID(_ id: PersistentIdentifier?) -> Stat? {
         guard let id else { return nil }
         return character.stats.first { $0.persistentModelID == id }
     }
-
-    private func skillTemplateByID(_ id: PersistentIdentifier?) -> SkillTemplate? {
-        guard let id, let library else { return nil }
-        return library.skillTemplates.first { $0.persistentModelID == id }
+    
+    private func characterSkillByID(_ id: PersistentIdentifier?) -> CharacterSkill? {
+        guard let id else { return nil }
+        return character.learnedSkills.first { $0.persistentModelID == id }
     }
-
+    
     private var canAdd: Bool {
-        guard library != nil else { return false }
-        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedName.isEmpty else { return false }
-        guard selectedAttributeID != nil else { return false }
-
-        switch selectedSkillMode {
-        case .natural:
-            return selectedNaturalSkillID != nil
-        case .learned:
-            return selectedLearnedSkillTemplateID != nil
-        }
+        let hasTemplateOrName =
+        templateByID(selectedTemplateID) != nil ||
+        !customName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        
+        let hasAttr = selectedAttributeID != nil
+        
+        let hasSkill =
+        (selectedSkillMode == .natural && selectedNaturalSkillID != nil) ||
+        (selectedSkillMode == .learned && (selectedCharacterSkillID != nil || templateProvidesLearnedSkill()))
+        
+        return hasTemplateOrName && hasAttr && hasSkill
     }
-
+    
     var body: some View {
         NavigationStack {
             Form {
-                Section("Add From Library (Optional)") {
+                Section("From Library") {
                     Button {
-                        showingGoalRollTemplatePicker = true
+                        showingTemplatePicker = true
                     } label: {
                         HStack {
-                            Text("Choose Template")
+                            Text("Template")
                             Spacer()
-                            if let t = templateByID(selectedExistingTemplateID) {
+                            if let t = templateByID(selectedTemplateID) {
                                 Text(t.name).foregroundStyle(.secondary)
                             } else {
-                                Text("None").foregroundStyle(.secondary)
+                                Text("Choose…").foregroundStyle(.secondary)
                             }
                             Image(systemName: "chevron.right")
                                 .foregroundStyle(.tertiary)
                         }
                     }
-                    .disabled(library == nil || goalRollTemplatesOrdered.isEmpty)
-
+                    .disabled(library == nil || templatesSorted.isEmpty)
+                    
                     if library == nil {
                         Text("Rules library not available yet.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                    } else if goalRollTemplatesOrdered.isEmpty {
+                    } else if templatesSorted.isEmpty {
                         Text("No goal roll templates yet.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                    } else if let t = templateByID(selectedExistingTemplateID),
-                              !t.templateDescription.isEmpty {
-                        Text(t.templateDescription)
+                    } else {
+                        Text("Pick a template to auto-fill defaults, then adjust if you want.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
-
-                    Text("If you choose a template, this screen edits/updates it (including Formula Defaults) before adding the roll.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
                 }
-
-                Section("Template Fields") {
-                    TextField("Name", text: $name)
+                
+                Section("Or Create New Template") {
+                    TextField("New goal roll name", text: $customName)
                         .autocorrectionDisabled()
-
-                    TextField("Keywords (comma-separated)", text: $userKeywords)
-                        .autocorrectionDisabled()
-
-                    TextEditor(text: $descriptionText)
-                        .frame(minHeight: 90)
-
-                    HStack {
-                        Text("Base Modifier")
-                        Spacer()
-                        Button { baseModifier -= 1 } label: {
-                            Image(systemName: "minus.circle.fill").font(.title2)
-                        }
-                        .buttonStyle(.borderless)
-
-                        Text("\(baseModifier)")
-                            .font(.title3)
-                            .fontWeight(.semibold)
-                            .frame(minWidth: 40)
-
-                        Button { baseModifier += 1 } label: {
-                            Image(systemName: "plus.circle.fill").font(.title2)
-                        }
-                        .buttonStyle(.borderless)
-                    }
                 }
-
-                Section("Formula Defaults") {
+                
+                Section("Formula") {
                     Picker("Attribute", selection: $selectedAttributeID) {
-                        Text("Select...").tag(nil as PersistentIdentifier?)
+                        Text("Select…").tag(nil as PersistentIdentifier?)
                         ForEach(attributesOrdered) { a in
                             Text("\(a.category): \(a.name)")
                                 .tag(a.persistentModelID as PersistentIdentifier?)
                         }
                     }
-
-                    Picker("Skill Mode", selection: $selectedSkillMode) {
+                    
+                    Picker("Skill Type", selection: $selectedSkillMode) {
                         ForEach(GoalRollTemplate.SkillMode.allCases, id: \.self) { mode in
                             Text(mode.rawValue).tag(mode)
                         }
                     }
-
+                    .pickerStyle(.segmented)
+                    .onChange(of: selectedSkillMode) { _, _ in
+                        selectedNaturalSkillID = nil
+                        selectedCharacterSkillID = nil
+                    }
+                    
                     if selectedSkillMode == .natural {
                         Picker("Natural Skill", selection: $selectedNaturalSkillID) {
-                            Text("Select...").tag(nil as PersistentIdentifier?)
+                            Text("Select…").tag(nil as PersistentIdentifier?)
                             ForEach(naturalSkillsOrdered) { s in
                                 Text(s.name).tag(s.persistentModelID as PersistentIdentifier?)
                             }
                         }
                     } else {
-                        Button {
-                            showingLearnedTemplatePicker = true
-                        } label: {
-                            HStack {
-                                Text("Default Learned Skill")
-                                Spacer()
-                                if let t = skillTemplateByID(selectedLearnedSkillTemplateID) {
-                                    Text("\(t.category): \(t.name)")
-                                        .foregroundStyle(.secondary)
-                                } else {
-                                    Text("Select...")
-                                        .foregroundStyle(.secondary)
+                        Picker("Learned/Lore/Tongue", selection: $selectedCharacterSkillID) {
+                            Text("Select…").tag(nil as PersistentIdentifier?)
+                            ForEach(learnedSkillsGrouped, id: \.0) { (cat, items) in
+                                Section(cat) {
+                                    ForEach(items) { s in
+                                        Text(s.effectiveName)
+                                            .tag(s.persistentModelID as PersistentIdentifier?)
+                                    }
                                 }
-                                Image(systemName: "chevron.right")
-                                    .foregroundStyle(.tertiary)
                             }
                         }
-                        .disabled(library == nil || learnedSkillTemplatesOrdered.isEmpty)
-
-                        if (library != nil && learnedSkillTemplatesOrdered.isEmpty) {
-                            Text("No learned-skill templates exist yet. Create a Skill/Lore/Tongue template first.")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
                     }
-
-                    Text("These defaults are used by all non-branched rolls created from this template.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
                 }
-
-                Section("Implicit Keywords Preview") {
-                    let previewName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-                    let preview = GoalRollTemplate(
-                        name: previewName.isEmpty ? "New Goal Roll" : previewName,
-                        templateDescription: descriptionText,
-                        baseModifier: baseModifier,
-                        userKeywords: userKeywords,
-                        defaultAttributeName: "",
-                        defaultAttributeCategory: "Body",
-                        defaultSkillMode: .natural,
-                        defaultNaturalSkillName: "",
-                        defaultLearnedSkillTemplate: nil
-                    )
-                    Text(preview.implicitKeywords.joined(separator: ", "))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-
+                
                 Section {
-                    Text("This screen creates (or updates) a library template, then adds the roll to this character using the defaults above.")
+                    Text("Tip: If a template points at a learned skill your character doesn’t have yet, it will be created at value 0 when you add the roll.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
             }
-            .navigationTitle("New Goal Roll")
+            .navigationTitle("Add Goal Roll")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { isPresented = false }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Create & Add") { createTemplateAndAddRoll() }
+                    Button("Add Goal Roll") { add() }
                         .disabled(!canAdd)
                 }
             }
-            .onChange(of: selectedSkillMode) { _, _ in
-                // Clear opposite selection when switching modes
-                selectedNaturalSkillID = nil
-                selectedLearnedSkillTemplateID = nil
-            }
-            .sheet(isPresented: $showingGoalRollTemplatePicker) {
+            .sheet(isPresented: $showingTemplatePicker) {
                 SearchableTemplatePickerSheet(
-                    title: "Choose Goal Roll Template",
-                    items: goalRollTemplatesOrdered,
-                    itemTitle: { $0.name },
-                    itemSubtitle: { $0.templateDescription },
-                    onSelect: { chosen in
-                        selectedExistingTemplateID = chosen.persistentModelID
-                        applyTemplateToEditor(chosen)
-                        showingGoalRollTemplatePicker = false
-                    },
-                    onCancel: { showingGoalRollTemplatePicker = false }
-                )
-            }
-            .sheet(isPresented: $showingLearnedTemplatePicker) {
-                SearchableTemplatePickerSheet(
-                    title: "Choose Learned Skill Template",
-                    items: learnedSkillTemplatesOrdered,
-                    itemTitle: { "\($0.category): \($0.name)" },
-                    itemSubtitle: { $0.templateDescription },
-                    onSelect: { chosen in
-                        selectedLearnedSkillTemplateID = chosen.persistentModelID
-                        showingLearnedTemplatePicker = false
-                    },
-                    onCancel: { showingLearnedTemplatePicker = false }
-                )
+                    title: "Choose Template",
+                    prompt: "Search templates",
+                    items: templatesSorted,
+                    name: { $0.name },
+                    subtitle: { $0.templateDescription }
+                ) { picked in
+                    selectedTemplateID = picked.persistentModelID
+                    applyTemplateDefaults(picked)
+                }
             }
         }
     }
-
-    private func applyTemplateToEditor(_ template: GoalRollTemplate) {
-        name = template.name
-        descriptionText = template.templateDescription
-        baseModifier = template.baseModifier
-        userKeywords = template.userKeywords
-
-        // Resolve defaults into this character’s IDs where possible
+    
+    // MARK: - Template defaults
+    
+    private func applyTemplateDefaults(_ template: GoalRollTemplate) {
+        // Attribute default
         if let attr = character.stats.first(where: {
-            KeywordUtil.normalize($0.statType) == "attribute" &&
+            $0.statType == "attribute" &&
             $0.category == template.defaultAttributeCategory &&
             $0.name.caseInsensitiveCompare(template.defaultAttributeName) == .orderedSame
         }) {
             selectedAttributeID = attr.persistentModelID
-        } else {
-            selectedAttributeID = nil
         }
-
+        
         selectedSkillMode = template.defaultSkillMode
-
+        
         if template.defaultSkillMode == .natural {
             if let ns = character.stats.first(where: {
-                KeywordUtil.normalize($0.statType) == "skill" &&
+                $0.statType == "skill" &&
                 $0.category == "Natural Skills" &&
                 $0.name.caseInsensitiveCompare(template.defaultNaturalSkillName) == .orderedSame
             }) {
@@ -315,89 +221,77 @@ struct AddGoalRollView: View {
             } else {
                 selectedNaturalSkillID = nil
             }
-            selectedLearnedSkillTemplateID = nil
+            selectedCharacterSkillID = nil
         } else {
             selectedNaturalSkillID = nil
-            selectedLearnedSkillTemplateID = template.defaultLearnedSkillTemplate?.persistentModelID
+            
+            if let st = template.defaultLearnedSkillTemplate,
+               let existing = character.learnedSkills.first(where: { $0.template?.persistentModelID == st.persistentModelID }) {
+                selectedCharacterSkillID = existing.persistentModelID
+            } else {
+                selectedCharacterSkillID = nil
+            }
         }
     }
-
-    private func createTemplateAndAddRoll() {
+    
+    private func templateProvidesLearnedSkill() -> Bool {
+        guard let t = templateByID(selectedTemplateID) else { return false }
+        return t.defaultSkillMode == .learned && t.defaultLearnedSkillTemplate != nil
+    }
+    
+    // MARK: - Add
+    
+    private func add() {
         guard let library else { return }
-
-        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedName.isEmpty else { return }
         guard let attr = statByID(selectedAttributeID) else { return }
-
-        // Prefer: if user selected an existing template, update THAT one.
-        // Otherwise: update-by-name (case-insensitive), else create new.
+        
+        // Resolve template (picked or create/reuse by name)
         let template: GoalRollTemplate
-        if let selected = templateByID(selectedExistingTemplateID) {
-            template = selected
-        } else if let existingByName = library.goalRollTemplates.first(where: {
-            $0.name.caseInsensitiveCompare(trimmedName) == .orderedSame
-        }) {
-            template = existingByName
+        if let picked = templateByID(selectedTemplateID) {
+            template = picked
         } else {
-            let newTemplate = GoalRollTemplate(
-                name: trimmedName,
-                templateDescription: "",
-                baseModifier: 0,
-                userKeywords: "",
-                defaultAttributeName: "",
-                defaultAttributeCategory: "Body",
-                defaultSkillMode: .natural,
-                defaultNaturalSkillName: "",
-                defaultLearnedSkillTemplate: nil
-            )
-            library.goalRollTemplates.append(newTemplate)
-            template = newTemplate
-        }
-
-        // Update template fields
-        template.name = trimmedName
-        template.templateDescription = descriptionText
-        template.baseModifier = baseModifier
-        template.userKeywords = userKeywords
-
-        // Save defaults from the user’s selections (write actual names/categories to template)
-        template.defaultAttributeName = attr.name
-        template.defaultAttributeCategory = attr.category
-        template.defaultSkillMode = selectedSkillMode
-
-        if selectedSkillMode == .natural {
-            guard let ns = statByID(selectedNaturalSkillID) else { return }
-            template.defaultNaturalSkillName = ns.name
-            template.defaultLearnedSkillTemplate = nil
-        } else {
-            guard let st = skillTemplateByID(selectedLearnedSkillTemplateID) else { return }
-            template.defaultNaturalSkillName = ""
-            template.defaultLearnedSkillTemplate = st
-        }
-
-        // Add the roll to this character using the chosen defaults
-        if selectedSkillMode == .natural {
-            guard let ns = statByID(selectedNaturalSkillID) else { return }
-            character.goalRolls.append(
-                CharacterGoalRoll(template: template, attributeStat: attr, naturalSkillStat: ns, characterSkill: nil)
-            )
-        } else {
-            guard let st = template.defaultLearnedSkillTemplate else { return }
-
-            let cs: CharacterSkill
-            if let existingCS = character.learnedSkills.first(where: { $0.template?.persistentModelID == st.persistentModelID }) {
-                cs = existingCS
+            let name = customName.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !name.isEmpty else { return }
+            
+            if let existing = library.goalRollTemplates.first(where: { $0.name.caseInsensitiveCompare(name) == .orderedSame }) {
+                template = existing
             } else {
-                let newCS = CharacterSkill(template: st, value: 0)
-                character.learnedSkills.append(newCS)
-                cs = newCS
+                let created = GoalRollTemplate(name: name)
+                library.goalRollTemplates.append(created)
+                template = created
             }
-
-            character.goalRolls.append(
-                CharacterGoalRoll(template: template, attributeStat: attr, naturalSkillStat: nil, characterSkill: cs)
-            )
         }
-
+        
+        // Prevent duplicates of the same template on a character
+        if character.goalRolls.contains(where: { $0.template?.persistentModelID == template.persistentModelID }) {
+            isPresented = false
+            return
+        }
+        
+        let roll: CharacterGoalRoll
+        
+        if selectedSkillMode == .natural {
+            guard let ns = statByID(selectedNaturalSkillID) else { return }
+            roll = CharacterGoalRoll(template: template, attributeStat: attr, naturalSkillStat: ns, characterSkill: nil)
+        } else {
+            // Prefer explicit pick
+            if let cs = characterSkillByID(selectedCharacterSkillID) {
+                roll = CharacterGoalRoll(template: template, attributeStat: attr, naturalSkillStat: nil, characterSkill: cs)
+            } else {
+                // Fall back to template default learned skill (auto-create if missing)
+                guard let st = template.defaultLearnedSkillTemplate else { return }
+                
+                if let existing = character.learnedSkills.first(where: { $0.template?.persistentModelID == st.persistentModelID }) {
+                    roll = CharacterGoalRoll(template: template, attributeStat: attr, naturalSkillStat: nil, characterSkill: existing)
+                } else {
+                    let newSkill = CharacterSkill(template: st, value: 0)
+                    character.learnedSkills.append(newSkill)
+                    roll = CharacterGoalRoll(template: template, attributeStat: attr, naturalSkillStat: nil, characterSkill: newSkill)
+                }
+            }
+        }
+        
+        character.goalRolls.append(roll)
         isPresented = false
     }
 }

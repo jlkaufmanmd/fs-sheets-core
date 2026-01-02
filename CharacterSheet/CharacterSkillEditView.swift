@@ -5,12 +5,12 @@ struct CharacterSkillEditView: View {
     @Environment(\.dismiss) private var dismiss
     @Bindable var skill: CharacterSkill
     var library: RulesLibrary?
-
+    
     @State private var showingBranchAlert = false
     @State private var showingTemplateEdit = false
-
+    
     @FocusState private var valueFocused: Bool
-
+    
     var body: some View {
         Form {
             Section("Name") {
@@ -27,17 +27,17 @@ struct CharacterSkillEditView: View {
                     }
                 }
             }
-
+            
             Section("Category") {
                 Text(skill.effectiveCategory)
                     .foregroundStyle(.secondary)
             }
-
+            
             Section("Value") {
                 VStack(spacing: 16) {
                     Text("\(skill.value)")
                         .font(.system(size: 56, weight: .bold, design: .rounded))
-
+                    
                     TextField("Value", value: $skill.value, format: .number)
                         .keyboardType(.numberPad)
                         .focused($valueFocused)
@@ -46,7 +46,7 @@ struct CharacterSkillEditView: View {
                         .onChange(of: skill.value) { _, _ in
                             enforceMinimum()
                         }
-
+                    
                     HStack(spacing: 28) {
                         Button {
                             skill.value -= 1
@@ -56,7 +56,7 @@ struct CharacterSkillEditView: View {
                                 .font(.system(size: 44))
                         }
                         .buttonStyle(.borderless)
-
+                        
                         Button {
                             skill.value += 1
                         } label: {
@@ -68,7 +68,7 @@ struct CharacterSkillEditView: View {
                 }
                 .padding(.vertical, 8)
             }
-
+            
             Section("Description") {
                 if skill.isBranched {
                     TextEditor(text: $skill.overrideDescription)
@@ -82,7 +82,7 @@ struct CharacterSkillEditView: View {
                     }
                 }
             }
-
+            
             Section("Keywords") {
                 if skill.isBranched {
                     TextField("Comma-separated", text: $skill.overrideUserKeywords)
@@ -96,7 +96,7 @@ struct CharacterSkillEditView: View {
                     }
                 }
             }
-
+            
             Section("Template Keywords") {
                 if let t = skill.template {
                     Text(t.keywordsForRules.joined(separator: ", "))
@@ -108,24 +108,24 @@ struct CharacterSkillEditView: View {
                         .foregroundStyle(.secondary)
                 }
             }
-
+            
             Section("Keywords for This Character") {
                 Text(skill.keywordsForRules.joined(separator: ", "))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-
+            
             if skill.isBranched, let date = skill.branchedDate {
                 Section {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Branched from Library")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
-
+                        
                         Text(date.formatted(date: .abbreviated, time: .omitted))
                             .font(.caption)
                             .foregroundStyle(.tertiary)
-
+                        
                         Button("Revert to Library Version", role: .destructive) {
                             revertToLibrary()
                         }
@@ -166,23 +166,23 @@ struct CharacterSkillEditView: View {
             }
         }
     }
-
+    
     private func enforceMinimum() {
         if skill.value < skill.minimumValue {
             skill.value = skill.minimumValue
         }
     }
-
+    
     private func createBranch() {
         skill.overrideName = skill.effectiveName
         skill.overrideCategory = skill.effectiveCategory
         skill.overrideDescription = skill.effectiveDescription
         skill.overrideUserKeywords = skill.effectiveUserKeywords
-
+        
         skill.isBranched = true
         skill.branchedDate = Date()
     }
-
+    
     private func revertToLibrary() {
         skill.isBranched = false
         skill.branchedDate = nil
