@@ -1,31 +1,22 @@
 import SwiftUI
 
-/// A lightweight searchable picker presented as a sheet.
-/// Use this anywhere you need “tap to choose a template” with an inline search field.
 struct SearchableTemplatePickerSheet<Item: Identifiable>: View {
-    @Environment(\.dismiss) private var dismiss
-
     let title: String
-    let prompt: String
+    let prompt: String?
     let items: [Item]
-
-    /// Primary label (what shows as the row title).
     let name: (Item) -> String
-
-    /// Optional secondary label (row subtitle).
-    let subtitle: ((Item) -> String)?
-
-    /// Called when user selects an item.
+    let subtitle: (Item) -> String?
     let onPick: (Item) -> Void
 
+    @Environment(\.dismiss) private var dismiss
     @State private var searchText: String = ""
 
     init(
         title: String,
-        prompt: String = "Search…",
+        prompt: String? = nil,
         items: [Item],
         name: @escaping (Item) -> String,
-        subtitle: ((Item) -> String)? = nil,
+        subtitle: @escaping (Item) -> String? = { _ in nil },
         onPick: @escaping (Item) -> Void
     ) {
         self.title = title
@@ -36,7 +27,7 @@ struct SearchableTemplatePickerSheet<Item: Identifiable>: View {
         self.onPick = onPick
     }
 
-    private var filtered: [Item] {
+    private var filteredItems: [Item] {
         let q = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !q.isEmpty else { return items }
         return items.filter { name($0).localizedCaseInsensitiveContains(q) }
@@ -45,37 +36,38 @@ struct SearchableTemplatePickerSheet<Item: Identifiable>: View {
     var body: some View {
         NavigationStack {
             List {
-                if filtered.isEmpty {
-                    ContentUnavailableView(
-                        "No matches",
-                        systemImage: "magnifyingglass",
-                        description: Text("Try a different search.")
-                    )
-                } else {
-                    ForEach(filtered) { item in
+                if let prompt, !prompt.isEmpty {
+                    Section {
+                        Text(prompt)
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Section {
+                    ForEach(filteredItems) { item in
                         Button {
                             onPick(item)
                             dismiss()
                         } label: {
-                            VStack(alignment: .leading, spacing: 3) {
+                            VStack(alignment: .leading, spacing: 4) {
                                 Text(name(item))
-                                if let subtitle {
-                                    let sub = subtitle(item)
-                                    if !sub.isEmpty {
-                                        Text(sub)
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                            .lineLimit(2)
-                                    }
+                                    .foregroundStyle(.primary)
+
+                                if let sub = subtitle(item), !sub.isEmpty {
+                                    Text(sub)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
                                 }
                             }
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         }
                     }
                 }
             }
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
-            .searchable(text: $searchText, prompt: prompt)
+            .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }

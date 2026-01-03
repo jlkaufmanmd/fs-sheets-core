@@ -2,13 +2,14 @@ import Foundation
 import SwiftData
 
 @Model
-class RulesLibrary {
+final class RulesLibrary {
     var createdDate: Date
 
-    @Relationship(deleteRule: .cascade)
+    // Explicit inverses help CloudKit/SwiftData sync and migrations.
+    @Relationship(deleteRule: .cascade, inverse: \GoalRollTemplate.library)
     var goalRollTemplates: [GoalRollTemplate]
 
-    @Relationship(deleteRule: .cascade)
+    @Relationship(deleteRule: .cascade, inverse: \SkillTemplate.library)
     var skillTemplates: [SkillTemplate]
 
     init() {
@@ -21,11 +22,14 @@ class RulesLibrary {
 // MARK: - Skill Templates (Learned Skills / Lores / Tongues)
 
 @Model
-class SkillTemplate {
+final class SkillTemplate: KeywordProvider {
     @Attribute(.unique) var name: String
     var category: String // "Learned Skills", "Lores", "Tongues"
     var templateDescription: String
     var userKeywords: String
+
+    // Back-reference for inverse relationship
+    var library: RulesLibrary?
 
     init(
         name: String,
@@ -45,16 +49,12 @@ class SkillTemplate {
             user: userKeywords
         )
     }
-}
 
-extension SkillTemplate: KeywordProvider {
     var keywordsForRules: [String] { implicitKeywords }
 }
 
 @Model
-class CharacterSkill {
-    @Attribute(.unique) var id: UUID
-
+final class CharacterSkill: KeywordProvider {
     var value: Int
 
     var isBranched: Bool
@@ -69,7 +69,6 @@ class CharacterSkill {
     var character: RPGCharacter?
 
     init(template: SkillTemplate, value: Int = 0) {
-        self.id = UUID()
         self.template = template
         self.value = value
         self.isBranched = false
@@ -95,12 +94,10 @@ class CharacterSkill {
     }
 }
 
-extension CharacterSkill: KeywordProvider { }
-
 // MARK: - Goal Roll Templates
 
 @Model
-class GoalRollTemplate {
+final class GoalRollTemplate: KeywordProvider {
     enum SkillMode: String, Codable, CaseIterable {
         case natural = "Natural Skill"
         case learned = "Learned/Lore/Tongue"
@@ -122,6 +119,9 @@ class GoalRollTemplate {
 
     // If SkillMode == .learned
     var defaultLearnedSkillTemplate: SkillTemplate?
+
+    // Back-reference for inverse relationship
+    var library: RulesLibrary?
 
     init(
         name: String,
@@ -158,16 +158,12 @@ class GoalRollTemplate {
             user: userKeywords
         )
     }
-}
 
-extension GoalRollTemplate: KeywordProvider {
     var keywordsForRules: [String] { implicitKeywords }
 }
 
 @Model
-class CharacterGoalRoll {
-    @Attribute(.unique) var id: UUID
-
+final class CharacterGoalRoll: KeywordProvider {
     var isBranched: Bool
     var branchedDate: Date?
 
@@ -191,8 +187,6 @@ class CharacterGoalRoll {
         naturalSkillStat: Stat? = nil,
         characterSkill: CharacterSkill? = nil
     ) {
-        self.id = UUID()
-
         self.template = template
         self.attributeStat = attributeStat
         self.naturalSkillStat = naturalSkillStat
@@ -227,7 +221,7 @@ class CharacterGoalRoll {
         guard let character, let t = template else { return nil }
         return character.stats.first(where: {
             KeywordUtil.normalize($0.statType) == "attribute" &&
-            $0.category == t.defaultAttributeCategory &&
+            KeywordUtil.normalize($0.category) == KeywordUtil.normalize(t.defaultAttributeCategory) &&
             $0.name.caseInsensitiveCompare(t.defaultAttributeName) == .orderedSame
         })
     }
@@ -238,7 +232,7 @@ class CharacterGoalRoll {
         guard t.defaultSkillMode == .natural else { return nil }
         return character.stats.first(where: {
             KeywordUtil.normalize($0.statType) == "skill" &&
-            $0.category == "Natural Skills" &&
+            KeywordUtil.normalize($0.category) == KeywordUtil.normalize("Natural Skills") &&
             $0.name.caseInsensitiveCompare(t.defaultNaturalSkillName) == .orderedSame
         })
     }
@@ -248,18 +242,17 @@ class CharacterGoalRoll {
         guard let character, let t = template else { return nil }
         guard t.defaultSkillMode == .learned, let learnedTemplate = t.defaultLearnedSkillTemplate else { return nil }
 
-        // Find existing instance on this character (no side effects here)
-        return character.learnedSkills.first(where: { $0.template?.persistentModelID == learnedTemplate.persistentModelID })
+        return character.learnedSkills.first(where: {
+            $0.template?.persistentModelID == learnedTemplate.persistentModelID
+        })
     }
 
     var goalValue: Int {
         let attrValue = effectiveAttributeStat?.value ?? 0
-        let skillValue: Int
-        if effectiveSkillMode == .natural {
-            skillValue = effectiveNaturalSkillStat?.value ?? 0
-        } else {
-            skillValue = effectiveCharacterSkill?.value ?? 0
-        }
+        let skillValue: Int = (effectiveSkillMode == .natural)
+            ? (effectiveNaturalSkillStat?.value ?? 0)
+            : (effectiveCharacterSkill?.value ?? 0)
+
         return attrValue + skillValue + effectiveBaseModifier
     }
 
@@ -268,6 +261,7 @@ class CharacterGoalRoll {
         return effectiveCharacterSkill?.effectiveName
     }
 
+    // ✅ Important fix: use EFFECTIVE values so non-branched rolls still produce good keywords.
     var keywordsForRules: [String] {
         var base = [effectiveName, "goal roll"]
 
@@ -277,5 +271,3 @@ class CharacterGoalRoll {
         return KeywordUtil.make(base: base, user: effectiveUserKeywords)
     }
 }
-
-extension CharacterGoalRoll: KeywordProvider { }

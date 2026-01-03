@@ -2,8 +2,7 @@ import Foundation
 import SwiftData
 
 @Model
-class RPGCharacter {
-    @Attribute(.unique) var id: UUID
+final class RPGCharacter {
     var name: String
     var characterDescription: String
 
@@ -17,7 +16,6 @@ class RPGCharacter {
     var goalRolls: [CharacterGoalRoll]
 
     init(name: String, characterDescription: String = "") {
-        self.id = UUID()
         self.name = name
         self.characterDescription = characterDescription
         self.stats = []
@@ -27,8 +25,7 @@ class RPGCharacter {
 }
 
 @Model
-class Stat {
-    @Attribute(.unique) var id: UUID
+final class Stat: KeywordProvider {
     var name: String
     var value: Int
 
@@ -47,7 +44,6 @@ class Stat {
         displayOrder: Int,
         isDeletable: Bool
     ) {
-        self.id = UUID()
         self.name = name
         self.value = value
         self.statType = statType
@@ -55,41 +51,42 @@ class Stat {
         self.displayOrder = displayOrder
         self.isDeletable = isDeletable
     }
-}
 
-extension Stat {
     var minimumValue: Int {
-        if KeywordUtil.normalize(statType) == "attribute" {
-            return category == "Occult" ? 0 : 1
+        let typeKey = KeywordUtil.normalize(statType)
+        let catKey = KeywordUtil.normalize(category)
+
+        if typeKey == "attribute" {
+            return catKey == "occult" ? 0 : 1
         } else {
-            return category == "Natural Skills" ? 1 : 0
+            return catKey == KeywordUtil.normalize("Natural Skills") ? 1 : 0
         }
     }
-}
 
-extension Stat: KeywordProvider {
     /// Keywords intrinsic to this Stat (no user keywords yet).
-    /// Using "implicit" naming convention in spirit; protocol uses keywordsForRules.
-    var keywordsForRules: [String] {
+    /// Using "implicit" so we can reserve "effective" later for modified values.
+    var implicitKeywords: [String] {
         let typeKey = KeywordUtil.normalize(statType)
         let catKey  = KeywordUtil.normalize(category)
         let nameKey = KeywordUtil.normalize(name)
 
-        var base: [String] = [
+        var keys: [String] = [
             nameKey,
             "stat",
             typeKey,
             catKey
         ]
 
-        if typeKey == "attribute" { base.append("attribute") }
-        if typeKey == "skill" { base.append("skill") }
+        if typeKey == "attribute" { keys.append("attribute") }
+        if typeKey == "skill" { keys.append("skill") }
 
         if catKey.contains("natural") {
-            base.append("natural")
-            base.append("natural skill")
+            keys.append("natural")
+            keys.append("natural skill")
         }
 
-        return Array(Set(base.map(KeywordUtil.normalize))).sorted()
+        return Array(Set(keys.map(KeywordUtil.normalize))).sorted()
     }
+
+    var keywordsForRules: [String] { implicitKeywords }
 }

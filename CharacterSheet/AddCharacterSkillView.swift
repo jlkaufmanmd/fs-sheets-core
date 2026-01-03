@@ -6,76 +6,64 @@ struct AddCharacterSkillView: View {
     var library: RulesLibrary?
     @Binding var isPresented: Bool
 
-    @State private var selectedCategory: String = "Learned Skills"
-
-    // Template selection
     @State private var selectedTemplateID: PersistentIdentifier?
+    @State private var customName: String = ""
+    @State private var customValue: Int = 0
     @State private var showingTemplatePicker = false
 
-    // Creating new template
-    @State private var customName: String = ""
-    @State private var createAsCategory: String = "Learned Skills"
-
-    private let categories = ["Learned Skills", "Lores", "Tongues"]
-
-    private var templatesForSelectedCategory: [SkillTemplate] {
+    private var templatesSorted: [SkillTemplate] {
         guard let library else { return [] }
-        return library.skillTemplates
-            .filter { $0.category == selectedCategory }
-            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        return library.skillTemplates.sorted {
+            $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+        }
     }
 
-    private func templateByID(_ id: PersistentIdentifier?) -> SkillTemplate? {
-        guard let id else { return nil }
-        return templatesForSelectedCategory.first { $0.persistentModelID == id }
+    private var selectedTemplate: SkillTemplate? {
+        guard let selectedTemplateID else { return nil }
+        return templatesSorted.first(where: { $0.persistentModelID == selectedTemplateID })
     }
 
     var body: some View {
         NavigationStack {
             Form {
-                Section("Choose Category") {
-                    Picker("Category", selection: $selectedCategory) {
-                        ForEach(categories, id: \.self) { Text($0).tag($0) }
-                    }
-                    .pickerStyle(.segmented)
-                }
-
                 Section("Template") {
-                    HStack {
-                        Text("From Library")
-                        Spacer()
-                        Button {
-                            showingTemplatePicker = true
-                        } label: {
-                            if let t = templateByID(selectedTemplateID) {
-                                Text(t.name).foregroundStyle(.tint)
-                            } else {
-                                Text("Choose…").foregroundStyle(.tint)
-                            }
+                    Button {
+                        showingTemplatePicker = true
+                    } label: {
+                        HStack {
+                            Text(selectedTemplate?.name.isEmpty == false ? selectedTemplate!.name : "Select…")
+                                .foregroundStyle(selectedTemplate == nil ? .secondary : .primary)
+                            Spacer()
+                            Image(systemName: "chevron.up.chevron.down")
+                                .foregroundStyle(.tertiary)
                         }
-                        .buttonStyle(.plain)
                     }
 
-                    if let t = templateByID(selectedTemplateID), !t.templateDescription.isEmpty {
-                        Text(t.templateDescription)
+                    if let t = selectedTemplate {
+                        Text(t.category)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
+                }
 
-                    Divider()
-
-                    Picker("New Template Category", selection: $createAsCategory) {
-                        ForEach(categories, id: \.self) { Text($0).tag($0) }
-                    }
-
-                    TextField("Or create new template name", text: $customName)
+                Section("Name Override (Optional)") {
+                    TextField("Leave blank to use template name", text: $customName)
                         .autocorrectionDisabled()
                 }
 
+                Section("Starting Value") {
+                    Stepper(value: $customValue, in: 0...50) {
+                        Text("\(customValue)")
+                            .font(.title3)
+                            .fontWeight(.semibold)
+                    }
+                }
+
                 Section {
-                    Text("Adding from library keeps the shared template. You can branch later per character.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    Button("Add Skill") {
+                        addSkill()
+                    }
+                    .disabled(selectedTemplate == nil)
                 }
             }
             .navigationTitle("Add Skill")
@@ -84,67 +72,38 @@ struct AddCharacterSkillView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { isPresented = false }
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Add") { addSkill() }
-                        .disabled(!canAdd)
-                }
-            }
-            .onChange(of: selectedCategory) { _, _ in
-                // Reset selection when changing category
-                selectedTemplateID = nil
             }
             .sheet(isPresented: $showingTemplatePicker) {
                 SearchableTemplatePickerSheet(
-                    title: selectedCategory,
-                    prompt: "Search…",
-                    items: templatesForSelectedCategory,
+                    title: "Pick a Skill Template",
+                    prompt: "Search templates",
+                    items: templatesSorted,
                     name: { $0.name },
-                    subtitle: { $0.templateDescription }
+                    subtitle: { $0.category }
                 ) { picked in
                     selectedTemplateID = picked.persistentModelID
+                    // convenience: if user hasn't typed an override, keep it empty
                 }
             }
         }
     }
 
-    private var canAdd: Bool {
-        if templateByID(selectedTemplateID) != nil { return true }
-        return !customName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
-
     private func addSkill() {
-        guard let library else { return }
+        guard let template = selectedTemplate else { return }
 
-        // If a template is selected, add that
-        if let selected = templateByID(selectedTemplateID) {
-            // Prevent duplicates of the same template on the character
-            if character.learnedSkills.contains(where: { $0.template?.persistentModelID == selected.persistentModelID }) {
-                isPresented = false
-                return
-            }
-            character.learnedSkills.append(CharacterSkill(template: selected, value: 0))
-            isPresented = false
-            return
+        let newSkill = CharacterSkill(template: template, value: customValue)
+        let trimmed = customName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty {
+            // Branch immediately if they override the name at creation time
+            newSkill.isBranched = true
+            newSkill.branchedDate = Date()
+            newSkill.overrideName = trimmed
+            newSkill.overrideCategory = template.category
+            newSkill.overrideDescription = template.templateDescription
+            newSkill.overrideUserKeywords = template.userKeywords
         }
 
-        // Otherwise create (or reuse existing) template by name+category
-        let name = customName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !name.isEmpty else { return }
-
-        if let existing = library.skillTemplates.first(where: {
-            $0.category == createAsCategory && $0.name.caseInsensitiveCompare(name) == .orderedSame
-        }) {
-            if !character.learnedSkills.contains(where: { $0.template?.persistentModelID == existing.persistentModelID }) {
-                character.learnedSkills.append(CharacterSkill(template: existing, value: 0))
-            }
-            isPresented = false
-            return
-        }
-
-        let template = SkillTemplate(name: name, category: createAsCategory)
-        library.skillTemplates.append(template)
-
-        character.learnedSkills.append(CharacterSkill(template: template, value: 0))
+        character.learnedSkills.append(newSkill)
         isPresented = false
     }
 }
