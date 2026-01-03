@@ -2,181 +2,310 @@ import SwiftUI
 import SwiftData
 
 struct CharacterDetailView: View {
-    @Environment(\.dismiss) private var dismiss
-
+    @Environment(\.modelContext) private var modelContext
     @Bindable var character: RPGCharacter
-    var library: RulesLibrary?
 
-    // Sheet presentation
-    @State private var showingAddSkill = false
-    @State private var showingAddGoalRoll = false
+    @Query(sort: \RulesLibrary.createdDate) private var libraries: [RulesLibrary]
+    private var library: RulesLibrary? { libraries.first }
 
-    // Required display order
-    private let attributeCategoryOrder = ["Body", "Mind", "Spirit", "Occult"]
+    // Sheets / pickers
+    @State private var showingAddSkillNew = false
+    @State private var showingAddRollNew = false
 
-    private var attributesOrdered: [Stat] {
-        let attrs = character.stats.filter { KeywordUtil.normalize($0.statType) == "attribute" }
-        return attrs.sorted {
-            let aIdx = attributeCategoryOrder.firstIndex(of: $0.category) ?? 999
-            let bIdx = attributeCategoryOrder.firstIndex(of: $1.category) ?? 999
-            if aIdx != bIdx { return aIdx < bIdx }
-            if $0.displayOrder != $1.displayOrder { return $0.displayOrder < $1.displayOrder }
-            return $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-        }
-    }
+    @State private var showingSkillTemplatePicker = false
+    @State private var showingRollTemplatePicker = false
 
-    private var naturalSkillsOrdered: [Stat] {
+    @State private var showingAddSkillFromTemplate = false
+    @State private var showingAddRollFromTemplate = false
+
+    @State private var selectedSkillTemplateID: PersistentIdentifier?
+    @State private var selectedRollTemplateID: PersistentIdentifier?
+
+    // Inline value editing focus (tap number to type)
+    @FocusState private var focusedStatID: PersistentIdentifier?
+    @FocusState private var focusedSkillID: PersistentIdentifier?
+
+    private var attributes: [Stat] {
         character.stats
-            .filter {
-                KeywordUtil.normalize($0.statType) == "skill" &&
-                $0.category == "Natural Skills"
-            }
-            .sorted {
-                if $0.displayOrder != $1.displayOrder { return $0.displayOrder < $1.displayOrder }
-                return $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-            }
+            .filter { $0.statType == "attribute" }
+            .sorted { $0.displayOrder < $1.displayOrder }
     }
 
-    private var learnedSkillsOrdered: [CharacterSkill] {
-        character.learnedSkills
-            .sorted { $0.effectiveName.localizedCaseInsensitiveCompare($1.effectiveName) == .orderedAscending }
+    private var naturalSkills: [Stat] {
+        character.stats
+            .filter { $0.statType == "skill" && $0.category == "Natural Skills" }
+            .sorted { $0.displayOrder < $1.displayOrder }
     }
 
-    private var goalRollsOrdered: [CharacterGoalRoll] {
-        character.goalRolls
-            .sorted { $0.effectiveName.localizedCaseInsensitiveCompare($1.effectiveName) == .orderedAscending }
+    private var learnedSkills: [CharacterSkill] {
+        character.learnedSkills.sorted { $0.effectiveName.localizedCaseInsensitiveCompare($1.effectiveName) == .orderedAscending }
+    }
+
+    private var goalRolls: [CharacterGoalRoll] {
+        character.goalRolls.sorted { $0.effectiveName.localizedCaseInsensitiveCompare($1.effectiveName) == .orderedAscending }
     }
 
     var body: some View {
         Form {
-            Section("Character") {
-                TextField("Name", text: $character.name)
-                TextEditor(text: $character.characterDescription)
-                    .frame(minHeight: 80)
-            }
-
             Section("Attributes") {
-                if attributesOrdered.isEmpty {
-                    Text("No attributes yet.")
-                        .foregroundStyle(.secondary)
-                } else {
-                    ForEach(attributesOrdered) { stat in
-                        NavigationLink {
-                            StatEditView(stat: stat)   // ✅ FIX: stat:, not character:
-                        } label: {
-                            HStack {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(stat.name)
-                                    Text(stat.category)
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-                                Spacer()
-                                Text("\(stat.value)")
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                    }
+                ForEach(attributes) { stat in
+                    valueRowForStat(stat)
                 }
             }
 
             Section("Natural Skills") {
-                if naturalSkillsOrdered.isEmpty {
-                    Text("No natural skills yet.")
-                        .foregroundStyle(.secondary)
-                } else {
-                    ForEach(naturalSkillsOrdered) { stat in
-                        NavigationLink {
-                            StatEditView(stat: stat)   // ✅ FIX: stat:
-                        } label: {
-                            HStack {
-                                Text(stat.name)
-                                Spacer()
-                                Text("\(stat.value)")
-                                    .foregroundStyle(.secondary)
-                            }
+                ForEach(naturalSkills) { stat in
+                    valueRowForStat(stat)
+                }
+            }
+
+            Section {
+                HStack {
+                    Text("Learned Skills / Lores / Tongues")
+                        .font(.headline)
+                    Spacer()
+                    Menu {
+                        Button("New…") { showingAddSkillNew = true }
+                        if let library, !library.skillTemplates.isEmpty {
+                            Button("From Template…") { showingSkillTemplatePicker = true }
                         }
+                    } label: {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.title3)
                     }
                 }
             }
 
-            Section("Learned Skills / Lores / Tongues") {
-                if learnedSkillsOrdered.isEmpty {
+            Section {
+                if learnedSkills.isEmpty {
                     Text("No learned skills yet.")
                         .foregroundStyle(.secondary)
                 } else {
-                    ForEach(learnedSkillsOrdered) { skill in
-                        NavigationLink {
-                            CharacterSkillEditView(skill: skill, library: library)
-                        } label: {
-                            HStack {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(skill.effectiveName)
-                                    Text(skill.effectiveCategory)
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-                                Spacer()
-                                Text("\(skill.value)")
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
+                    ForEach(learnedSkills) { skill in
+                        valueRowForLearnedSkill(skill)
                     }
-                }
-
-                Button {
-                    showingAddSkill = true
-                } label: {
-                    Label("Add Learned Skill", systemImage: "plus")
+                    .onDelete { idx in
+                        for i in idx { character.learnedSkills.remove(at: i) }
+                    }
                 }
             }
 
-            Section("Goal Rolls") {
-                if goalRollsOrdered.isEmpty {
+            Section {
+                HStack {
+                    Text("Goal Rolls")
+                        .font(.headline)
+                    Spacer()
+                    Menu {
+                        Button("New…") { showingAddRollNew = true }
+                        if let library, !library.goalRollTemplates.isEmpty {
+                            Button("From Template…") { showingRollTemplatePicker = true }
+                        }
+                    } label: {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.title3)
+                    }
+                }
+            }
+
+            Section {
+                if goalRolls.isEmpty {
                     Text("No goal rolls yet.")
                         .foregroundStyle(.secondary)
                 } else {
-                    ForEach(goalRollsOrdered) { roll in
+                    ForEach(goalRolls) { roll in
                         NavigationLink {
                             GoalRollEditView(roll: roll, library: library)
                         } label: {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(roll.effectiveName)
                                 Text("Goal: \(roll.goalValue)")
-                                    .font(.caption)
+                                    .font(.footnote)
                                     .foregroundStyle(.secondary)
                             }
                         }
                     }
-                }
-
-                Button {
-                    showingAddGoalRoll = true
-                } label: {
-                    Label("Add Goal Roll", systemImage: "plus")
+                    .onDelete { idx in
+                        for i in idx { character.goalRolls.remove(at: i) }
+                    }
                 }
             }
         }
-        .navigationTitle(character.name.isEmpty ? "Character" : character.name)
+        .navigationTitle(character.name)
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Close") { dismiss() }
+        .onAppear {
+            ensureLibraryExists()
+        }
+        // MARK: - New sheets
+        .sheet(isPresented: $showingAddSkillNew) {
+            if let lib = library {
+                AddCharacterSkillView(character: character, library: lib, isPresented: $showingAddSkillNew, mode: .new)
             }
         }
-        .sheet(isPresented: $showingAddSkill) {
-            AddCharacterSkillView(
-                character: character,
-                library: library,
-                isPresented: $showingAddSkill
-            )
+        .sheet(isPresented: $showingAddRollNew) {
+            if let lib = library {
+                AddGoalRollView(character: character, library: lib, isPresented: $showingAddRollNew, mode: .new)
+            }
         }
-        .sheet(isPresented: $showingAddGoalRoll) {
-            AddGoalRollView(
-                character: character,
-                library: library,
-                isPresented: $showingAddGoalRoll
+        // MARK: - Template pickers
+        .sheet(isPresented: $showingSkillTemplatePicker) {
+            if let lib = library {
+                SearchableTemplatePickerSheet(
+                    title: "Skill Templates",
+                    prompt: "Type to filter. Pick a template to add it to this character.",
+                    templates: lib.skillTemplates,
+                    sectionTitle: { $0.category },
+                    rowTitle: { $0.name },
+                    rowSubtitle: { t in
+                        let d = t.templateDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+                        return d.isEmpty ? nil : d
+                    },
+                    rowSearchText: { $0.userKeywords }
+                ) { picked in
+                    selectedSkillTemplateID = picked.persistentModelID
+                    showingAddSkillFromTemplate = true
+                }
+            }
+        }
+        .sheet(isPresented: $showingRollTemplatePicker) {
+            if let lib = library {
+                SearchableTemplatePickerSheet(
+                    title: "Goal Roll Templates",
+                    prompt: "Type to filter. Pick a template to add it to this character.",
+                    templates: lib.goalRollTemplates,
+                    sectionTitle: { _ in "Goal Rolls" },
+                    rowTitle: { $0.name },
+                    rowSubtitle: { t in
+                        let d = t.templateDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+                        return d.isEmpty ? nil : d
+                    },
+                    rowSearchText: { $0.userKeywords }
+                ) { picked in
+                    selectedRollTemplateID = picked.persistentModelID
+                    showingAddRollFromTemplate = true
+                }
+            }
+        }
+        // MARK: - Add-from-template sheets (with optional customization)
+        .sheet(isPresented: $showingAddSkillFromTemplate) {
+            if let lib = library, let id = selectedSkillTemplateID {
+                AddCharacterSkillView(character: character, library: lib, isPresented: $showingAddSkillFromTemplate, mode: .fromTemplate(id))
+            }
+        }
+        .sheet(isPresented: $showingAddRollFromTemplate) {
+            if let lib = library, let id = selectedRollTemplateID {
+                AddGoalRollView(character: character, library: lib, isPresented: $showingAddRollFromTemplate, mode: .fromTemplate(id))
+            }
+        }
+    }
+
+    // MARK: - Row builders
+
+    private func valueRowForStat(_ stat: Stat) -> some View {
+        HStack {
+            NavigationLink {
+                StatEditView(stat: stat)
+            } label: {
+                Text(stat.name)
+            }
+
+            Spacer()
+
+            Button {
+                stat.value -= 1
+                if stat.value < stat.minimumValue { stat.value = stat.minimumValue }
+            } label: {
+                Image(systemName: "minus.circle")
+            }
+            .buttonStyle(.plain)
+
+            valueEditor(
+                value: Binding(
+                    get: { stat.value },
+                    set: { newVal in
+                        stat.value = max(newVal, stat.minimumValue)
+                    }
+                ),
+                isFocused: focusedStatID == stat.persistentModelID,
+                onFocus: { focusedStatID = stat.persistentModelID }
             )
+
+            Button {
+                stat.value += 1
+            } label: {
+                Image(systemName: "plus.circle")
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private func valueRowForLearnedSkill(_ skill: CharacterSkill) -> some View {
+        HStack {
+            NavigationLink {
+                CharacterSkillEditView(skill: skill, library: library)
+            } label: {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(skill.effectiveName)
+                    Text(skill.effectiveCategory)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Spacer()
+
+            Button {
+                skill.value -= 1
+                if skill.value < skill.minimumValue { skill.value = skill.minimumValue }
+            } label: {
+                Image(systemName: "minus.circle")
+            }
+            .buttonStyle(.plain)
+
+            valueEditor(
+                value: Binding(
+                    get: { skill.value },
+                    set: { newVal in
+                        skill.value = max(newVal, skill.minimumValue)
+                    }
+                ),
+                isFocused: focusedSkillID == skill.persistentModelID,
+                onFocus: { focusedSkillID = skill.persistentModelID }
+            )
+
+            Button {
+                skill.value += 1
+            } label: {
+                Image(systemName: "plus.circle")
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private func valueEditor(value: Binding<Int>, isFocused: Bool, onFocus: @escaping () -> Void) -> some View {
+        // Tap to focus and type; otherwise show as text.
+        ZStack {
+            if isFocused {
+                TextField("", value: value, format: .number)
+                    .frame(width: 44)
+                    .multilineTextAlignment(.center)
+                    .keyboardType(.numberPad)
+                    .focused($focusedStatID, equals: focusedStatID) // harmless; focus is controlled externally
+            } else {
+                Text("\(value.wrappedValue)")
+                    .frame(width: 44)
+                    .font(.headline)
+                    .contentShape(Rectangle())
+                    .onTapGesture { onFocus() }
+            }
+        }
+    }
+
+    // MARK: - Library bootstrap
+
+    private func ensureLibraryExists() {
+        if library == nil {
+            let lib = RulesLibrary()
+            modelContext.insert(lib)
         }
     }
 }
