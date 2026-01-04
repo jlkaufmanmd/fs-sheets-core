@@ -57,8 +57,18 @@ struct AddCharacterSkillView: View {
                         TextField("Keywords (comma-separated)", text: $keywords)
                             .autocorrectionDisabled()
 
-                        TextEditor(text: $description)
-                            .frame(minHeight: 100)
+                        ZStack(alignment: .topLeading) {
+                            if description.isEmpty {
+                                Text("Description (optional)...")
+                                    .foregroundStyle(.secondary)
+                                    .padding(.top, 8)
+                                    .padding(.leading, 4)
+                                    .allowsHitTesting(false)
+                            }
+                            TextEditor(text: $description)
+                                .frame(minHeight: 100)
+                        }
+
                     }
 
                     Section("Starting Value") {

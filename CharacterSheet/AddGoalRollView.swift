@@ -83,8 +83,18 @@ struct AddGoalRollView: View {
                         TextField("Keywords (comma-separated)", text: $keywords)
                             .autocorrectionDisabled()
 
-                        TextEditor(text: $description)
-                            .frame(minHeight: 110)
+                        ZStack(alignment: .topLeading) {
+                            if description.isEmpty {
+                                Text("Description (optional)...")
+                                    .foregroundStyle(.secondary)
+                                    .padding(.top, 8)
+                                    .padding(.leading, 4)
+                                    .allowsHitTesting(false)
+                            }
+                            TextEditor(text: $description)
+                                .frame(minHeight: 110)
+                        }
+
                     }
 
                     Section("Base Modifier") {
@@ -155,8 +165,18 @@ struct AddGoalRollView: View {
                             TextField("Keywords (comma-separated)", text: $customKeywords)
                                 .autocorrectionDisabled()
 
-                            TextEditor(text: $customDescription)
-                                .frame(minHeight: 110)
+                            ZStack(alignment: .topLeading) {
+                                if customDescription.isEmpty {
+                                    Text("Description (optional)...")
+                                        .foregroundStyle(.secondary)
+                                        .padding(.top, 8)
+                                        .padding(.leading, 4)
+                                        .allowsHitTesting(false)
+                                }
+                                TextEditor(text: $customDescription)
+                                    .frame(minHeight: 110)
+                            }
+
 
                             Stepper(value: $customBaseModifier, in: -50...50) {
                                 Text("Base Modifier: \(customBaseModifier)")

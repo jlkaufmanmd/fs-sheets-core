@@ -6,6 +6,7 @@ struct CharacterDetailView: View {
     @Bindable var character: RPGCharacter
 
     @Query(sort: \RulesLibrary.createdDate) private var libraries: [RulesLibrary]
+    @Query(sort: \RPGCharacter.name) private var allCharacters: [RPGCharacter]
     private var library: RulesLibrary? { libraries.first }
 
     // Sheets / pickers
@@ -24,6 +25,11 @@ struct CharacterDetailView: View {
     // Inline value editing focus (tap number to type)
     @FocusState private var focusedStatID: PersistentIdentifier?
     @FocusState private var focusedSkillID: PersistentIdentifier?
+    @FocusState private var isNameFieldFocused: Bool
+    
+    // Name validation
+    @State private var showingDuplicateNameAlert = false
+    @State private var previousValidName: String = ""
 
     private var attributes: [Stat] {
         character.stats
@@ -50,9 +56,27 @@ struct CharacterDetailView: View {
             Section("Character") {
                 TextField("Name", text: $character.name)
                     .font(.headline)
+                    .focused($isNameFieldFocused)
+                    .onSubmit {
+                        validateName()
+                    }
+                    .onChange(of: isNameFieldFocused) { _, isFocused in
+                        if !isFocused {
+                            validateName()
+                        }
+                    }
                 
-                TextEditor(text: $character.characterDescription)
-                    .frame(minHeight: 80)
+                ZStack(alignment: .topLeading) {
+                    if character.characterDescription.isEmpty {
+                        Text("Description (optional)...")
+                            .foregroundStyle(.secondary)
+                            .padding(.top, 8)
+                            .padding(.leading, 4)
+                            .allowsHitTesting(false)
+                    }
+                    TextEditor(text: $character.characterDescription)
+                        .frame(minHeight: 80)
+                }
             }
 
             Section("Attributes") {
@@ -146,11 +170,20 @@ struct CharacterDetailView: View {
                 Button("Done") {
                     focusedStatID = nil
                     focusedSkillID = nil
+                    isNameFieldFocused = false
                 }
             }
         }
+        .alert("Duplicate Name", isPresented: $showingDuplicateNameAlert) {
+            Button("OK") {
+                character.name = previousValidName
+            }
+        } message: {
+            Text("A character named \"\(character.name)\" already exists. Please choose a different name.")
+        }
         .onAppear {
             ensureLibraryExists()
+            previousValidName = character.name
         }
         // MARK: - New sheets
         .sheet(isPresented: $showingAddSkillNew) {
@@ -231,27 +264,9 @@ struct CharacterDetailView: View {
             }
             .buttonStyle(.plain)
 
-            // Tap to edit value
-            ZStack {
-                if focusedStatID == stat.persistentModelID {
-                    TextField("", value: Binding(
-                        get: { stat.value },
-                        set: { newVal in stat.value = max(newVal, stat.minimumValue) }
-                    ), format: .number)
-                        .frame(width: 44)
-                        .multilineTextAlignment(.center)
-                        .keyboardType(.numberPad)
-                        .focused($focusedStatID, equals: stat.persistentModelID)
-                } else {
-                    Text("\(stat.value)")
-                        .frame(width: 44)
-                        .font(.headline)
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            focusedStatID = stat.persistentModelID
-                        }
-                }
-            }
+            Text("\(stat.value)")
+                .frame(width: 44)
+                .font(.headline)
 
             Button {
                 stat.value += 1
@@ -264,11 +279,15 @@ struct CharacterDetailView: View {
 
     private func valueRowForLearnedSkill(_ skill: CharacterSkill) -> some View {
         HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(skill.effectiveName)
-                Text(skill.effectiveCategory)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+            NavigationLink {
+                CharacterSkillEditView(skill: skill, library: library)
+            } label: {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(skill.effectiveName)
+                    Text(skill.effectiveCategory)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
             }
 
             Spacer()
@@ -281,7 +300,6 @@ struct CharacterDetailView: View {
             }
             .buttonStyle(.plain)
 
-            // Tap to edit value
             ZStack {
                 if focusedSkillID == skill.persistentModelID {
                     TextField("", value: Binding(
@@ -309,6 +327,30 @@ struct CharacterDetailView: View {
                 Image(systemName: "plus.circle")
             }
             .buttonStyle(.plain)
+        }
+    }
+    
+    // MARK: - Validation
+    
+    private func validateName() {
+        let trimmed = character.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // If empty, revert to previous
+        if trimmed.isEmpty {
+            character.name = previousValidName
+            return
+        }
+        
+        // Check for duplicates
+        let isDuplicate = allCharacters.contains { otherChar in
+            otherChar.persistentModelID != character.persistentModelID &&
+            otherChar.name.trimmingCharacters(in: .whitespacesAndNewlines).caseInsensitiveCompare(trimmed) == .orderedSame
+        }
+        
+        if isDuplicate {
+            showingDuplicateNameAlert = true
+        } else {
+            previousValidName = character.name
         }
     }
 

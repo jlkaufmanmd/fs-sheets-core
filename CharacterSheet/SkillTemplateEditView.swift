@@ -25,8 +25,18 @@ struct SkillTemplateEditView: View {
                 }
                 
                 Section("Description") {
-                    TextEditor(text: $editedDescription)
-                        .frame(minHeight: 120)
+                    ZStack(alignment: .topLeading) {
+                        if editedDescription.isEmpty {
+                            Text("Description (optional)...")
+                                .foregroundStyle(.secondary)
+                                .padding(.top, 8)
+                                .padding(.leading, 4)
+                                .allowsHitTesting(false)
+                        }
+                        TextEditor(text: $editedDescription)
+                            .frame(minHeight: 120)
+                    }
+
                 }
                 
                 Section("Keywords") {

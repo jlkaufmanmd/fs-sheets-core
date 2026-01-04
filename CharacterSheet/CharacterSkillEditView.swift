@@ -71,8 +71,18 @@ struct CharacterSkillEditView: View {
             
             Section("Description") {
                 if skill.isBranched {
-                    TextEditor(text: $skill.overrideDescription)
-                        .frame(minHeight: 100)
+                    ZStack(alignment: .topLeading) {
+                        if skill.overrideDescription.isEmpty {
+                            Text("Description (optional)...")
+                                .foregroundStyle(.secondary)
+                                .padding(.top, 8)
+                                .padding(.leading, 4)
+                                .allowsHitTesting(false)
+                        }
+                        TextEditor(text: $skill.overrideDescription)
+                            .frame(minHeight: 100)
+                    }
+
                 } else {
                     Button("Edit Description") { showingBranchAlert = true }
                     if !skill.effectiveDescription.isEmpty {

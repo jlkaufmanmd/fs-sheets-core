@@ -202,8 +202,18 @@ struct GoalRollEditView: View {
             
             Section("Description") {
                 if roll.isBranched {
-                    TextEditor(text: $roll.overrideDescription)
-                        .frame(minHeight: 100)
+                    ZStack(alignment: .topLeading) {
+                        if roll.overrideDescription.isEmpty {
+                            Text("Description (optional)...")
+                                .foregroundStyle(.secondary)
+                                .padding(.top, 8)
+                                .padding(.leading, 4)
+                                .allowsHitTesting(false)
+                        }
+                        TextEditor(text: $roll.overrideDescription)
+                            .frame(minHeight: 100)
+                    }
+
                 } else {
                     Button("Edit Description") { showingBranchAlert = true }
                     if !roll.effectiveDescription.isEmpty {
