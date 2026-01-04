@@ -14,8 +14,10 @@ struct ContentView: View {
     @Query(sort: \RPGCharacter.name) private var characters: [RPGCharacter]
     @Query private var libraries: [RulesLibrary]
     
+    @State private var navigationPath = NavigationPath()
+    
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navigationPath) {
             List {
                 Section("Characters") {
                     if characters.isEmpty {
@@ -23,8 +25,8 @@ struct ContentView: View {
                             .foregroundStyle(.secondary)
                     } else {
                         ForEach(characters) { c in
-                            NavigationLink(c.name) {
-                                CharacterDetailView(character: c)
+                            NavigationLink(value: c) {
+                                Text(c.name)
                             }
                         }
                         .onDelete(perform: deleteCharacters)
@@ -32,6 +34,9 @@ struct ContentView: View {
                 }
             }
             .navigationTitle("Character Sheets")
+            .navigationDestination(for: RPGCharacter.self) { character in
+                CharacterDetailView(character: character)
+            }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -53,10 +58,26 @@ struct ContentView: View {
         }
     }
     
+    private func generateUniqueName() -> String {
+        let baseName = "New Character"
+        let existingNames = Set(characters.map { $0.name })
+        
+        if !existingNames.contains(baseName) {
+            return baseName
+        }
+        
+        var counter = 2
+        while existingNames.contains("\(baseName) \(counter)") {
+            counter += 1
+        }
+        
+        return "\(baseName) \(counter)"
+    }
+    
     private func createCharacter() {
         ensureLibraryExists()
         
-        let newCharacter = RPGCharacter(name: "My Hero")
+        let newCharacter = RPGCharacter(name: generateUniqueName())
         
         // ---- ATTRIBUTES ----
         var order = 0
@@ -105,6 +126,9 @@ struct ContentView: View {
         addNat("Vigor", 1)
         
         modelContext.insert(newCharacter)
+        
+        // Navigate to the new character
+        navigationPath.append(newCharacter)
     }
     
     private func deleteCharacters(at offsets: IndexSet) {

@@ -140,6 +140,15 @@ struct CharacterDetailView: View {
         }
         .navigationTitle(character.name)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") {
+                    focusedStatID = nil
+                    focusedSkillID = nil
+                }
+            }
+        }
         .onAppear {
             ensureLibraryExists()
         }
@@ -222,16 +231,27 @@ struct CharacterDetailView: View {
             }
             .buttonStyle(.plain)
 
-            valueEditor(
-                value: Binding(
-                    get: { stat.value },
-                    set: { newVal in
-                        stat.value = max(newVal, stat.minimumValue)
-                    }
-                ),
-                isFocused: focusedStatID == stat.persistentModelID,
-                onFocus: { focusedStatID = stat.persistentModelID }
-            )
+            // Tap to edit value
+            ZStack {
+                if focusedStatID == stat.persistentModelID {
+                    TextField("", value: Binding(
+                        get: { stat.value },
+                        set: { newVal in stat.value = max(newVal, stat.minimumValue) }
+                    ), format: .number)
+                        .frame(width: 44)
+                        .multilineTextAlignment(.center)
+                        .keyboardType(.numberPad)
+                        .focused($focusedStatID, equals: stat.persistentModelID)
+                } else {
+                    Text("\(stat.value)")
+                        .frame(width: 44)
+                        .font(.headline)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            focusedStatID = stat.persistentModelID
+                        }
+                }
+            }
 
             Button {
                 stat.value += 1
@@ -261,16 +281,27 @@ struct CharacterDetailView: View {
             }
             .buttonStyle(.plain)
 
-            valueEditor(
-                value: Binding(
-                    get: { skill.value },
-                    set: { newVal in
-                        skill.value = max(newVal, skill.minimumValue)
-                    }
-                ),
-                isFocused: focusedSkillID == skill.persistentModelID,
-                onFocus: { focusedSkillID = skill.persistentModelID }
-            )
+            // Tap to edit value
+            ZStack {
+                if focusedSkillID == skill.persistentModelID {
+                    TextField("", value: Binding(
+                        get: { skill.value },
+                        set: { newVal in skill.value = max(newVal, skill.minimumValue) }
+                    ), format: .number)
+                        .frame(width: 44)
+                        .multilineTextAlignment(.center)
+                        .keyboardType(.numberPad)
+                        .focused($focusedSkillID, equals: skill.persistentModelID)
+                } else {
+                    Text("\(skill.value)")
+                        .frame(width: 44)
+                        .font(.headline)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            focusedSkillID = skill.persistentModelID
+                        }
+                }
+            }
 
             Button {
                 skill.value += 1
@@ -278,25 +309,6 @@ struct CharacterDetailView: View {
                 Image(systemName: "plus.circle")
             }
             .buttonStyle(.plain)
-        }
-    }
-
-    private func valueEditor(value: Binding<Int>, isFocused: Bool, onFocus: @escaping () -> Void) -> some View {
-        // Tap to focus and type; otherwise show as text.
-        ZStack {
-            if isFocused {
-                TextField("", value: value, format: .number)
-                    .frame(width: 44)
-                    .multilineTextAlignment(.center)
-                    .keyboardType(.numberPad)
-                    .focused($focusedStatID, equals: focusedStatID)
-            } else {
-                Text("\(value.wrappedValue)")
-                    .frame(width: 44)
-                    .font(.headline)
-                    .contentShape(Rectangle())
-                    .onTapGesture { onFocus() }
-            }
         }
     }
 
