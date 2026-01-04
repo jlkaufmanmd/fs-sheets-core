@@ -2,107 +2,172 @@ import SwiftUI
 import SwiftData
 
 struct AddCharacterSkillView: View {
-    var character: RPGCharacter
-    var library: RulesLibrary?
-    @Binding var isPresented: Bool
-
-    @State private var selectedTemplateID: PersistentIdentifier?
-    @State private var customName: String = ""
-    @State private var customValue: Int = 0
-    @State private var showingTemplatePicker = false
-
-    private var templatesSorted: [SkillTemplate] {
-        guard let library else { return [] }
-        return library.skillTemplates.sorted {
-            $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-        }
+    enum Mode {
+        case new
+        case fromTemplate(PersistentIdentifier)
     }
 
-    private var selectedTemplate: SkillTemplate? {
-        guard let selectedTemplateID else { return nil }
-        return templatesSorted.first(where: { $0.persistentModelID == selectedTemplateID })
+    var character: RPGCharacter
+    var library: RulesLibrary
+    @Binding var isPresented: Bool
+    let mode: Mode
+
+    // Shared fields
+    @State private var name: String = ""
+    @State private var description: String = ""
+    @State private var keywords: String = ""
+    @State private var category: String = "Learned Skills"
+    @State private var startingValue: Int = 0
+
+    // Template mode customization
+    @State private var customizeForCharacter: Bool = false
+    @State private var customName: String = ""
+    @State private var customValue: Int = 0
+
+    private var template: SkillTemplate? {
+        guard case .fromTemplate(let id) = mode else { return nil }
+        return library.skillTemplates.first(where: { $0.persistentModelID == id })
+    }
+
+    private var canAdd: Bool {
+        switch mode {
+        case .new:
+            return !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        case .fromTemplate:
+            return template != nil
+        }
     }
 
     var body: some View {
         NavigationStack {
             Form {
-                Section("Template") {
-                    Button {
-                        showingTemplatePicker = true
-                    } label: {
-                        HStack {
-                            Text(selectedTemplate?.name.isEmpty == false ? selectedTemplate!.name : "Select…")
-                                .foregroundStyle(selectedTemplate == nil ? .secondary : .primary)
-                            Spacer()
-                            Image(systemName: "chevron.up.chevron.down")
-                                .foregroundStyle(.tertiary)
+                switch mode {
+                case .new:
+                    Section("New Skill") {
+                        TextField("Name", text: $name)
+                            .textInputAutocapitalization(.words)
+                            .autocorrectionDisabled()
+
+                        Picker("Category", selection: $category) {
+                            Text("Learned Skills").tag("Learned Skills")
+                            Text("Lores").tag("Lores")
+                            Text("Tongues").tag("Tongues")
+                        }
+
+                        TextField("Keywords (comma-separated)", text: $keywords)
+                            .autocorrectionDisabled()
+
+                        TextEditor(text: $description)
+                            .frame(minHeight: 100)
+                    }
+
+                    Section("Starting Value") {
+                        Stepper(value: $startingValue, in: 0...50) {
+                            Text("\(startingValue)")
+                                .font(.title3)
+                                .fontWeight(.semibold)
                         }
                     }
 
-                    if let selectedTemplate {
-                        Text(selectedTemplate.category)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                case .fromTemplate:
+                    Section("Template") {
+                        if let t = template {
+                            Text(t.name).font(.headline)
+                            Text(t.category)
+                                .font(.callout)
+                                .foregroundStyle(.secondary)
+                            if !t.templateDescription.isEmpty {
+                                Text(t.templateDescription)
+                                    .font(.callout)
+                                    .foregroundStyle(.secondary)
+                            }
+                        } else {
+                            Text("Missing template.")
+                                .foregroundStyle(.secondary)
+                        }
                     }
-                }
 
-                Section("Name Override (Optional)") {
-                    TextField("Leave blank to use template name", text: $customName)
-                        .autocorrectionDisabled()
-                }
-
-                Section("Starting Value") {
-                    Stepper(value: $customValue, in: 0...50) {
-                        Text("\(customValue)")
-                            .font(.title3)
-                            .fontWeight(.semibold)
+                    Section {
+                        Toggle("Customize for this character", isOn: $customizeForCharacter)
                     }
-                }
 
-                Section {
-                    Button("Add Skill") {
-                        addSkill()
+                    if customizeForCharacter {
+                        Section("Customization") {
+                            TextField("Name (optional)", text: $customName)
+                                .textInputAutocapitalization(.words)
+                                .autocorrectionDisabled()
+
+                            Stepper(value: $customValue, in: 0...50) {
+                                Text("Starting Value: \(customValue)")
+                                    .fontWeight(.semibold)
+                            }
+                        }
                     }
-                    .disabled(selectedTemplate == nil)
                 }
             }
-            .navigationTitle("Add Skill")
+            .navigationTitle(navigationTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { isPresented = false }
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { isPresented = false } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Add") { add() }
+                        .disabled(!canAdd)
                 }
             }
-            .sheet(isPresented: $showingTemplatePicker) {
-                SearchableTemplatePickerSheet(
-                    title: "Pick a Skill Template",
-                    prompt: "Search templates",
-                    items: templatesSorted,
-                    name: { $0.name },
-                    subtitle: { template in template.category as String? }
-                ) { picked in
-                    selectedTemplateID = picked.persistentModelID
+            .onAppear {
+                if let t = template {
+                    customValue = 0
                 }
             }
         }
     }
 
-    private func addSkill() {
-        guard let template = selectedTemplate else { return }
-
-        let newSkill = CharacterSkill(template: template, value: customValue)
-        let trimmed = customName.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !trimmed.isEmpty {
-            // Branch immediately if they override the name at creation time
-            newSkill.isBranched = true
-            newSkill.branchedDate = Date()
-            newSkill.overrideName = trimmed
-            newSkill.overrideCategory = template.category
-            newSkill.overrideDescription = template.templateDescription
-            newSkill.overrideUserKeywords = template.userKeywords
+    private var navigationTitle: String {
+        switch mode {
+        case .new: return "New Skill"
+        case .fromTemplate: return "Add Skill"
         }
+    }
 
-        character.learnedSkills.append(newSkill)
-        isPresented = false
+    private func add() {
+        switch mode {
+        case .new:
+            let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmedName.isEmpty else { return }
+
+            let template = SkillTemplate(
+                name: trimmedName,
+                category: category,
+                templateDescription: description,
+                userKeywords: keywords
+            )
+
+            library.skillTemplates.append(template)
+            let skill = CharacterSkill(template: template, value: startingValue)
+            character.learnedSkills.append(skill)
+            isPresented = false
+
+        case .fromTemplate:
+            guard let t = template else { return }
+
+            let skill = CharacterSkill(template: t, value: customValue)
+
+            if customizeForCharacter {
+                let n = customName.trimmingCharacters(in: .whitespacesAndNewlines)
+
+                if !n.isEmpty || customValue != 0 {
+                    skill.isBranched = true
+                    skill.branchedDate = Date()
+                    skill.overrideName = n.isEmpty ? t.name : n
+                    skill.overrideCategory = t.category
+                    skill.overrideDescription = t.templateDescription
+                    skill.overrideUserKeywords = t.userKeywords
+                    skill.value = customValue
+                }
+            }
+
+            character.learnedSkills.append(skill)
+            isPresented = false
+        }
     }
 }
