@@ -79,11 +79,11 @@ struct AddCharacterSkillView: View {
                     prompt: "Search templates",
                     items: templatesSorted,
                     name: { $0.name },
-                    subtitle: { $0.category }
-                ) { picked in
-                    selectedTemplateID = picked.persistentModelID
-                    // convenience: if user hasn't typed an override, keep it empty
-                }
+                    subtitle: { $0.category },
+                    onPick: { picked in
+                        selectedTemplateID = picked.persistentModelID
+                    }
+                )
             }
         }
     }
