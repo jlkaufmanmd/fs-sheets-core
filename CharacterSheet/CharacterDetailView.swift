@@ -16,6 +16,10 @@ struct CharacterDetailView: View {
     @State private var showingSkillTemplatePicker = false
     @State private var showingRollTemplatePicker = false
 
+    @State private var selectedSkillCategory: String = "Learned Skills"
+    @State private var showingQuickAddSkill = false
+    @State private var quickAddSkillName: String = ""
+
     // Inline value editing focus (tap number to type)
     @FocusState private var focusedStatID: PersistentIdentifier?
     @FocusState private var focusedSkillID: PersistentIdentifier?
@@ -110,18 +114,17 @@ struct CharacterDetailView: View {
 
             Section("Attributes") {
                 ForEach(attributesByCategory, id: \.0) { (category, stats) in
-                    VStack(alignment: .leading, spacing: 8) {
+                    Section {
+                        ForEach(stats) { stat in
+                            statDisclosureRow(stat)
+                        }
+                    } header: {
                         Text(category)
                             .font(.subheadline)
                             .fontWeight(.semibold)
                             .foregroundStyle(.secondary)
-                            .padding(.top, 4)
-
-                        ForEach(stats) { stat in
-                            statDisclosureRow(stat)
-                        }
+                            .textCase(nil)
                     }
-                    .padding(.vertical, 4)
                 }
             }
 
@@ -137,13 +140,16 @@ struct CharacterDetailView: View {
                         .font(.headline)
                     Spacer()
 
-                    // Minimal add button
-                    if !availableSkillTemplates.filter({ $0.category == "Learned Skills" }).isEmpty {
+                    // Category-aware add button
+                    let categoryTemplates = availableSkillTemplates.filter({ $0.category == "Learned Skills" })
+                    if !categoryTemplates.isEmpty {
                         Menu {
                             Button("New…") {
-                                showingAddSkillNew = true
+                                selectedSkillCategory = "Learned Skills"
+                                showingQuickAddSkill = true
                             }
                             Button("From Template…") {
+                                selectedSkillCategory = "Learned Skills"
                                 showingSkillTemplatePicker = true
                             }
                         } label: {
@@ -152,7 +158,8 @@ struct CharacterDetailView: View {
                         }
                     } else {
                         Button {
-                            showingAddSkillNew = true
+                            selectedSkillCategory = "Learned Skills"
+                            showingQuickAddSkill = true
                         } label: {
                             Image(systemName: "plus.circle.fill")
                                 .foregroundStyle(.blue)
@@ -189,13 +196,16 @@ struct CharacterDetailView: View {
                         .font(.headline)
                     Spacer()
 
-                    // Minimal add button
-                    if !availableSkillTemplates.filter({ $0.category == "Lores" }).isEmpty {
+                    // Category-aware add button
+                    let categoryTemplates = availableSkillTemplates.filter({ $0.category == "Lores" })
+                    if !categoryTemplates.isEmpty {
                         Menu {
                             Button("New…") {
-                                showingAddSkillNew = true
+                                selectedSkillCategory = "Lores"
+                                showingQuickAddSkill = true
                             }
                             Button("From Template…") {
+                                selectedSkillCategory = "Lores"
                                 showingSkillTemplatePicker = true
                             }
                         } label: {
@@ -204,7 +214,8 @@ struct CharacterDetailView: View {
                         }
                     } else {
                         Button {
-                            showingAddSkillNew = true
+                            selectedSkillCategory = "Lores"
+                            showingQuickAddSkill = true
                         } label: {
                             Image(systemName: "plus.circle.fill")
                                 .foregroundStyle(.blue)
@@ -241,13 +252,16 @@ struct CharacterDetailView: View {
                         .font(.headline)
                     Spacer()
 
-                    // Minimal add button
-                    if !availableSkillTemplates.filter({ $0.category == "Tongues" }).isEmpty {
+                    // Category-aware add button
+                    let categoryTemplates = availableSkillTemplates.filter({ $0.category == "Tongues" })
+                    if !categoryTemplates.isEmpty {
                         Menu {
                             Button("New…") {
-                                showingAddSkillNew = true
+                                selectedSkillCategory = "Tongues"
+                                showingQuickAddSkill = true
                             }
                             Button("From Template…") {
+                                selectedSkillCategory = "Tongues"
                                 showingSkillTemplatePicker = true
                             }
                         } label: {
@@ -256,7 +270,8 @@ struct CharacterDetailView: View {
                         }
                     } else {
                         Button {
-                            showingAddSkillNew = true
+                            selectedSkillCategory = "Tongues"
+                            showingQuickAddSkill = true
                         } label: {
                             Image(systemName: "plus.circle.fill")
                                 .foregroundStyle(.blue)
@@ -362,10 +377,11 @@ struct CharacterDetailView: View {
         }
         // MARK: - Template pickers
         .sheet(isPresented: $showingSkillTemplatePicker) {
+            let filteredTemplates = availableSkillTemplates.filter { $0.category == selectedSkillCategory }
             SearchableTemplatePickerSheet(
-                title: "Skill Templates",
+                title: "\(selectedSkillCategory) Templates",
                 prompt: "Type to filter. Pick a template to add it to this character.",
-                templates: availableSkillTemplates,
+                templates: filteredTemplates,
                 sectionTitle: { $0.category },
                 rowTitle: { $0.name },
                 rowSubtitle: { t in
@@ -379,6 +395,18 @@ struct CharacterDetailView: View {
                 character.learnedSkills.append(newSkill)
                 showingSkillTemplatePicker = false
             }
+        }
+        .alert("New \(selectedSkillCategory.dropLast(selectedSkillCategory == "Learned Skills" || selectedSkillCategory == "Natural Skills" ? 1 : 0))", isPresented: $showingQuickAddSkill) {
+            TextField("Name", text: $quickAddSkillName)
+                .textInputAutocapitalization(.words)
+            Button("Cancel", role: .cancel) {
+                quickAddSkillName = ""
+            }
+            Button("Add") {
+                addQuickSkill()
+            }
+        } message: {
+            Text("Enter a name for the new skill")
         }
         .sheet(isPresented: $showingRollTemplatePicker) {
             SearchableTemplatePickerSheet(
@@ -548,28 +576,51 @@ struct CharacterDetailView: View {
         }
     }
     
-    // MARK: - Validation
-    
+    // MARK: - Validation & Actions
+
     private func validateName() {
         let trimmed = character.name.trimmingCharacters(in: .whitespacesAndNewlines)
-        
+
         // If empty, revert to previous
         if trimmed.isEmpty {
             character.name = previousValidName
             return
         }
-        
+
         // Check for duplicates
         let isDuplicate = allCharacters.contains { otherChar in
             otherChar.persistentModelID != character.persistentModelID &&
             otherChar.name.trimmingCharacters(in: .whitespacesAndNewlines).caseInsensitiveCompare(trimmed) == .orderedSame
         }
-        
+
         if isDuplicate {
             showingDuplicateNameAlert = true
         } else {
             previousValidName = character.name
         }
+    }
+
+    private func addQuickSkill() {
+        guard let library else { return }
+        let trimmed = quickAddSkillName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            quickAddSkillName = ""
+            return
+        }
+
+        // Create template and add skill
+        let template = SkillTemplate(
+            name: trimmed,
+            category: selectedSkillCategory,
+            templateDescription: "",
+            userKeywords: ""
+        )
+        library.skillTemplates.append(template)
+
+        let skill = CharacterSkill(template: template, value: 1)
+        character.learnedSkills.append(skill)
+
+        quickAddSkillName = ""
     }
 
     // MARK: - Library bootstrap
