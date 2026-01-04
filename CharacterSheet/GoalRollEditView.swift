@@ -2,12 +2,15 @@ import SwiftUI
 import SwiftData
 
 struct GoalRollEditView: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
     @Bindable var roll: CharacterGoalRoll
     var library: RulesLibrary?
-    
+
     @State private var showingBranchAlert = false
     @State private var showingTemplateEdit = false
-    
+    @State private var showingDeleteAlert = false
+
     @State private var skillMode: SkillMode = .natural
     
     enum SkillMode: String, CaseIterable {
@@ -250,16 +253,22 @@ struct GoalRollEditView: View {
                         Text("Branched from Library")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
-                        
+
                         Text(date.formatted(date: .abbreviated, time: .omitted))
                             .font(.caption)
                             .foregroundStyle(.tertiary)
-                        
+
                         Button("Revert to Library Version", role: .destructive) {
                             revertToLibrary()
                         }
                         .buttonStyle(.bordered)
                     }
+                }
+            }
+
+            Section {
+                Button("Delete Goal Roll from Character", role: .destructive) {
+                    showingDeleteAlert = true
                 }
             }
         }
@@ -282,6 +291,12 @@ struct GoalRollEditView: View {
             Button("Cancel", role: .cancel) { }
         } message: {
             Text("This goal roll is shared across characters. Edit the library for everyone, or create a local override for this character only?")
+        }
+        .alert("Delete Goal Roll?", isPresented: $showingDeleteAlert) {
+            Button("Delete", role: .destructive) { deleteGoalRoll() }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("This will remove \"\(roll.effectiveName)\" from this character. The template will remain in your library.")
         }
         .sheet(isPresented: $showingTemplateEdit) {
             if let template = roll.template {
@@ -331,17 +346,22 @@ struct GoalRollEditView: View {
     private func revertToLibrary() {
         roll.isBranched = false
         roll.branchedDate = nil
-        
+
         roll.overrideName = ""
         roll.overrideDescription = ""
         roll.overrideBaseModifier = 0
         roll.overrideUserKeywords = ""
-        
+
         roll.attributeStat = nil
         roll.naturalSkillStat = nil
         roll.characterSkill = nil
-        
+
         syncSkillModeFromEffective()
+    }
+
+    private func deleteGoalRoll() {
+        modelContext.delete(roll)
+        dismiss()
     }
 }
 

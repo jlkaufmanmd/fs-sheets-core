@@ -51,6 +51,19 @@ struct CharacterDetailView: View {
         character.goalRolls.sorted { $0.effectiveName.localizedCaseInsensitiveCompare($1.effectiveName) == .orderedAscending }
     }
 
+    // Filter templates to exclude ones character already has
+    private var availableSkillTemplates: [SkillTemplate] {
+        guard let library else { return [] }
+        let existingTemplateIDs = Set(character.learnedSkills.compactMap { $0.template?.persistentModelID })
+        return library.skillTemplates.filter { !existingTemplateIDs.contains($0.persistentModelID) }
+    }
+
+    private var availableGoalRollTemplates: [GoalRollTemplate] {
+        guard let library else { return [] }
+        let existingTemplateIDs = Set(character.goalRolls.compactMap { $0.template?.persistentModelID })
+        return library.goalRollTemplates.filter { !existingTemplateIDs.contains($0.persistentModelID) }
+    }
+
     var body: some View {
         Form {
             Section("Character") {
@@ -96,9 +109,9 @@ struct CharacterDetailView: View {
                     Text("Learned Skills / Lores / Tongues")
                         .font(.headline)
                     Spacer()
-                    
-                    // Show button if no templates, menu if templates exist
-                    if let library, !library.skillTemplates.isEmpty {
+
+                    // Show button if no available templates, menu if templates exist
+                    if !availableSkillTemplates.isEmpty {
                         Menu {
                             Button("New…") { showingAddSkillNew = true }
                             Button("From Template…") { showingSkillTemplatePicker = true }
@@ -136,9 +149,9 @@ struct CharacterDetailView: View {
                     Text("Goal Rolls")
                         .font(.headline)
                     Spacer()
-                    
-                    // Show button if no templates, menu if templates exist
-                    if let library, !library.goalRollTemplates.isEmpty {
+
+                    // Show button if no available templates, menu if templates exist
+                    if !availableGoalRollTemplates.isEmpty {
                         Menu {
                             Button("New…") { showingAddRollNew = true }
                             Button("From Template…") { showingRollTemplatePicker = true }
@@ -206,41 +219,37 @@ struct CharacterDetailView: View {
         }
         // MARK: - Template pickers
         .sheet(isPresented: $showingSkillTemplatePicker) {
-            if let lib = library {
-                SearchableTemplatePickerSheet(
-                    title: "Skill Templates",
-                    prompt: "Type to filter. Pick a template to add it to this character.",
-                    templates: lib.skillTemplates,
-                    sectionTitle: { $0.category },
-                    rowTitle: { $0.name },
-                    rowSubtitle: { t in
-                        let d = t.templateDescription.trimmingCharacters(in: .whitespacesAndNewlines)
-                        return d.isEmpty ? nil : d
-                    },
-                    rowSearchText: { $0.userKeywords }
-                ) { picked in
-                    selectedSkillTemplateID = picked.persistentModelID
-                    showingAddSkillFromTemplate = true
-                }
+            SearchableTemplatePickerSheet(
+                title: "Skill Templates",
+                prompt: "Type to filter. Pick a template to add it to this character.",
+                templates: availableSkillTemplates,
+                sectionTitle: { $0.category },
+                rowTitle: { $0.name },
+                rowSubtitle: { t in
+                    let d = t.templateDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+                    return d.isEmpty ? nil : d
+                },
+                rowSearchText: { $0.userKeywords }
+            ) { picked in
+                selectedSkillTemplateID = picked.persistentModelID
+                showingAddSkillFromTemplate = true
             }
         }
         .sheet(isPresented: $showingRollTemplatePicker) {
-            if let lib = library {
-                SearchableTemplatePickerSheet(
-                    title: "Goal Roll Templates",
-                    prompt: "Type to filter. Pick a template to add it to this character.",
-                    templates: lib.goalRollTemplates,
-                    sectionTitle: { _ in "Goal Rolls" },
-                    rowTitle: { $0.name },
-                    rowSubtitle: { t in
-                        let d = t.templateDescription.trimmingCharacters(in: .whitespacesAndNewlines)
-                        return d.isEmpty ? nil : d
-                    },
-                    rowSearchText: { $0.userKeywords }
-                ) { picked in
-                    selectedRollTemplateID = picked.persistentModelID
-                    showingAddRollFromTemplate = true
-                }
+            SearchableTemplatePickerSheet(
+                title: "Goal Roll Templates",
+                prompt: "Type to filter. Pick a template to add it to this character.",
+                templates: availableGoalRollTemplates,
+                sectionTitle: { _ in "Goal Rolls" },
+                rowTitle: { $0.name },
+                rowSubtitle: { t in
+                    let d = t.templateDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+                    return d.isEmpty ? nil : d
+                },
+                rowSearchText: { $0.userKeywords }
+            ) { picked in
+                selectedRollTemplateID = picked.persistentModelID
+                showingAddRollFromTemplate = true
             }
         }
         // MARK: - Add-from-template sheets (with optional customization)

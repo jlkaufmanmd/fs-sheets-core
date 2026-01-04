@@ -23,13 +23,6 @@ struct AddGoalRollView: View {
     @State private var selectedNaturalSkillID: PersistentIdentifier?
     @State private var selectedLearnedSkillID: PersistentIdentifier?
 
-    // Template mode customization
-    @State private var customizeForCharacter: Bool = false
-    @State private var customName: String = ""
-    @State private var customDescription: String = ""
-    @State private var customKeywords: String = ""
-    @State private var customBaseModifier: Int = 0
-
     private var template: GoalRollTemplate? {
         guard case .fromTemplate(let id) = mode else { return nil }
         return library.goalRollTemplates.first(where: { $0.persistentModelID == id })
@@ -162,7 +155,7 @@ struct AddGoalRollView: View {
                     }
 
                 case .fromTemplate:
-                    Section("Template") {
+                    Section("Adding Goal Roll") {
                         if let template {
                             Text(template.name).font(.headline)
                             if !template.templateDescription.isEmpty {
@@ -177,35 +170,9 @@ struct AddGoalRollView: View {
                     }
 
                     Section {
-                        Toggle("Customize for this character", isOn: $customizeForCharacter)
-                    }
-
-                    if customizeForCharacter {
-                        Section("Customization") {
-                            TextField("Name (optional)", text: $customName)
-                                .textInputAutocapitalization(.words)
-                                .autocorrectionDisabled()
-
-                            TextField("Keywords (comma-separated)", text: $customKeywords)
-                                .autocorrectionDisabled()
-
-                            ZStack(alignment: .topLeading) {
-                                if customDescription.isEmpty {
-                                    Text("Description (optional)...")
-                                        .foregroundStyle(.secondary)
-                                        .padding(.top, 8)
-                                        .padding(.leading, 4)
-                                        .allowsHitTesting(false)
-                                }
-                                TextEditor(text: $customDescription)
-                                    .frame(minHeight: 110)
-                            }
-
-                            Stepper(value: $customBaseModifier, in: -50...50) {
-                                Text("Base Modifier: \(customBaseModifier)")
-                                    .fontWeight(.semibold)
-                            }
-                        }
+                        Text("The goal roll will be added using the template's default formula and settings. You can customize it in the goal roll detail screen.")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
                     }
                 }
             }
@@ -279,22 +246,6 @@ struct AddGoalRollView: View {
             guard let template else { return }
 
             let roll = CharacterGoalRoll(template: template)
-
-            if customizeForCharacter {
-                let n = customName.trimmingCharacters(in: .whitespacesAndNewlines)
-                let k = customKeywords.trimmingCharacters(in: .whitespacesAndNewlines)
-                let d = customDescription.trimmingCharacters(in: .whitespacesAndNewlines)
-
-                if !n.isEmpty || !k.isEmpty || !d.isEmpty || customBaseModifier != 0 {
-                    roll.isBranched = true
-                    roll.branchedDate = Date()
-                    roll.overrideName = n.isEmpty ? template.name : n
-                    roll.overrideDescription = d.isEmpty ? template.templateDescription : d
-                    roll.overrideUserKeywords = k.isEmpty ? template.userKeywords : k
-                    roll.overrideBaseModifier = customBaseModifier != 0 ? customBaseModifier : template.baseModifier
-                }
-            }
-
             character.goalRolls.append(roll)
             isPresented = false
         }

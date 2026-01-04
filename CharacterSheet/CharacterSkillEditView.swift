@@ -3,12 +3,14 @@ import SwiftData
 
 struct CharacterSkillEditView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
     @Bindable var skill: CharacterSkill
     var library: RulesLibrary?
-    
+
     @State private var showingBranchAlert = false
     @State private var showingTemplateEdit = false
-    
+    @State private var showingDeleteAlert = false
+
     @FocusState private var valueFocused: Bool
     
     var body: some View {
@@ -131,16 +133,22 @@ struct CharacterSkillEditView: View {
                         Text("Branched from Library")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
-                        
+
                         Text(date.formatted(date: .abbreviated, time: .omitted))
                             .font(.caption)
                             .foregroundStyle(.tertiary)
-                        
+
                         Button("Revert to Library Version", role: .destructive) {
                             revertToLibrary()
                         }
                         .buttonStyle(.bordered)
                     }
+                }
+            }
+
+            Section {
+                Button("Delete Skill from Character", role: .destructive) {
+                    showingDeleteAlert = true
                 }
             }
         }
@@ -158,6 +166,12 @@ struct CharacterSkillEditView: View {
             Button("Cancel", role: .cancel) { }
         } message: {
             Text("This skill template is shared across characters. Edit the library for everyone, or create a local override for this character only?")
+        }
+        .alert("Delete Skill?", isPresented: $showingDeleteAlert) {
+            Button("Delete", role: .destructive) { deleteSkill() }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("This will remove \"\(skill.effectiveName)\" from this character. The template will remain in your library.")
         }
         .sheet(isPresented: $showingTemplateEdit) {
             if let template = skill.template {
@@ -200,6 +214,11 @@ struct CharacterSkillEditView: View {
         skill.overrideCategory = ""
         skill.overrideDescription = ""
         skill.overrideUserKeywords = ""
+    }
+
+    private func deleteSkill() {
+        modelContext.delete(skill)
+        dismiss()
     }
 }
 

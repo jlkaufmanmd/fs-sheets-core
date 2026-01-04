@@ -19,11 +19,6 @@ struct AddCharacterSkillView: View {
     @State private var category: String = "Learned Skills"
     @State private var startingValue: Int = 0
 
-    // Template mode customization
-    @State private var customizeForCharacter: Bool = false
-    @State private var customName: String = ""
-    @State private var customValue: Int = 0
-
     private var template: SkillTemplate? {
         guard case .fromTemplate(let id) = mode else { return nil }
         return library.skillTemplates.first(where: { $0.persistentModelID == id })
@@ -80,7 +75,7 @@ struct AddCharacterSkillView: View {
                     }
 
                 case .fromTemplate:
-                    Section("Template") {
+                    Section("Adding Skill") {
                         if let template {
                             Text(template.name).font(.headline)
                             Text(template.category)
@@ -98,20 +93,9 @@ struct AddCharacterSkillView: View {
                     }
 
                     Section {
-                        Toggle("Customize for this character", isOn: $customizeForCharacter)
-                    }
-
-                    if customizeForCharacter {
-                        Section("Customization") {
-                            TextField("Name (optional)", text: $customName)
-                                .textInputAutocapitalization(.words)
-                                .autocorrectionDisabled()
-
-                            Stepper(value: $customValue, in: 0...50) {
-                                Text("Starting Value: \(customValue)")
-                                    .fontWeight(.semibold)
-                            }
-                        }
+                        Text("The skill will be added with a starting value of 0. You can change the value in the skill detail screen.")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
                     }
                 }
             }
@@ -122,11 +106,6 @@ struct AddCharacterSkillView: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Add") { add() }
                         .disabled(!canAdd)
-                }
-            }
-            .onAppear {
-                if template != nil {
-                    customValue = 0
                 }
             }
         }
@@ -160,22 +139,7 @@ struct AddCharacterSkillView: View {
         case .fromTemplate:
             guard let template else { return }
 
-            let skill = CharacterSkill(template: template, value: customValue)
-
-            if customizeForCharacter {
-                let n = customName.trimmingCharacters(in: .whitespacesAndNewlines)
-
-                if !n.isEmpty || customValue != 0 {
-                    skill.isBranched = true
-                    skill.branchedDate = Date()
-                    skill.overrideName = n.isEmpty ? template.name : n
-                    skill.overrideCategory = template.category
-                    skill.overrideDescription = template.templateDescription
-                    skill.overrideUserKeywords = template.userKeywords
-                    skill.value = customValue
-                }
-            }
-
+            let skill = CharacterSkill(template: template, value: 0)
             character.learnedSkills.append(skill)
             isPresented = false
         }
