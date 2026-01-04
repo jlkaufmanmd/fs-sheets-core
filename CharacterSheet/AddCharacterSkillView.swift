@@ -74,15 +74,18 @@ struct AddCharacterSkillView: View {
                 }
             }
             .sheet(isPresented: $showingTemplatePicker) {
-                SearchableTemplatePickerSheet(
+                SearchableTemplatePickerSheet<SkillTemplate>(
                     title: "Pick a Skill Template",
                     prompt: "Search templates",
                     items: templatesSorted,
                     name: { $0.name },
-                    subtitle: { $0.category.isEmpty ? "" : $0.category }
-                ) { picked in
-                    selectedTemplateID = picked.persistentModelID
-                }
+                    subtitle: { template in
+                        return template.category.isEmpty ? "" : template.category
+                    },
+                    onPick: { picked in
+                        selectedTemplateID = picked.persistentModelID
+                    }
+                )
             }
         }
     }
