@@ -47,6 +47,14 @@ struct CharacterDetailView: View {
 
     var body: some View {
         Form {
+            Section("Character") {
+                TextField("Name", text: $character.name)
+                    .font(.headline)
+                
+                TextEditor(text: $character.characterDescription)
+                    .frame(minHeight: 80)
+            }
+
             Section("Attributes") {
                 ForEach(attributes) { stat in
                     valueRowForStat(stat)
@@ -202,11 +210,7 @@ struct CharacterDetailView: View {
 
     private func valueRowForStat(_ stat: Stat) -> some View {
         HStack {
-            NavigationLink {
-                StatEditView(stat: stat)
-            } label: {
-                Text(stat.name)
-            }
+            Text(stat.name)
 
             Spacer()
 
@@ -240,15 +244,11 @@ struct CharacterDetailView: View {
 
     private func valueRowForLearnedSkill(_ skill: CharacterSkill) -> some View {
         HStack {
-            NavigationLink {
-                CharacterSkillEditView(skill: skill, library: library)
-            } label: {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(skill.effectiveName)
-                    Text(skill.effectiveCategory)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(skill.effectiveName)
+                Text(skill.effectiveCategory)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
             }
 
             Spacer()
@@ -289,7 +289,7 @@ struct CharacterDetailView: View {
                     .frame(width: 44)
                     .multilineTextAlignment(.center)
                     .keyboardType(.numberPad)
-                    .focused($focusedStatID, equals: focusedStatID) // harmless; focus is controlled externally
+                    .focused($focusedStatID, equals: focusedStatID)
             } else {
                 Text("\(value.wrappedValue)")
                     .frame(width: 44)
