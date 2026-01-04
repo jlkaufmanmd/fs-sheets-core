@@ -72,9 +72,18 @@ struct SearchableTemplatePickerSheet<Template: Identifiable>: View {
                         if !sectionRows.isEmpty {
                             Section {
                                 ForEach(sectionRows) { row in
-                                    TemplateRowView(row: row) {
+                                    Button {
                                         onPick(row.value)
                                         dismiss()
+                                    } label: {
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text(row.title)
+                                            if let sub = row.subtitle, !sub.isEmpty {
+                                                Text(sub)
+                                                    .font(.footnote)
+                                                    .foregroundStyle(.secondary)
+                                            }
+                                        }
                                     }
                                 }
                             } header: {
@@ -122,35 +131,4 @@ struct SearchableTemplatePickerSheet<Template: Identifiable>: View {
     private var sectionNames: [String] {
         filteredRowsBySection.keys.sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
     }
-}
-
-private struct TemplateRowView<TemplateID: Hashable>: View {
-    let row: SearchableTemplatePickerSheet<AnyIdentifiable<TemplateID>>.Row
-    let action: () -> Void
-
-    init(
-        row: SearchableTemplatePickerSheet<AnyIdentifiable<TemplateID>>.Row,
-        action: @escaping () -> Void
-    ) {
-        self.row = row
-        self.action = action
-    }
-
-    var body: some View {
-        Button(action: action) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(row.title)
-                if let sub = row.subtitle, !sub.isEmpty {
-                    Text(sub)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-            }
-        }
-    }
-}
-
-/// Type erasure so TemplateRowView can be compiler-friendly without reintroducing heavy generics.
-struct AnyIdentifiable<ID: Hashable>: Identifiable {
-    let id: ID
 }

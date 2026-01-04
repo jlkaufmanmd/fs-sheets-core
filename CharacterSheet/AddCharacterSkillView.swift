@@ -71,13 +71,13 @@ struct AddCharacterSkillView: View {
 
                 case .fromTemplate:
                     Section("Template") {
-                        if let t = template {
-                            Text(t.name).font(.headline)
-                            Text(t.category)
+                        if let template {
+                            Text(template.name).font(.headline)
+                            Text(template.category)
                                 .font(.callout)
                                 .foregroundStyle(.secondary)
-                            if !t.templateDescription.isEmpty {
-                                Text(t.templateDescription)
+                            if !template.templateDescription.isEmpty {
+                                Text(template.templateDescription)
                                     .font(.callout)
                                     .foregroundStyle(.secondary)
                             }
@@ -115,7 +115,7 @@ struct AddCharacterSkillView: View {
                 }
             }
             .onAppear {
-                if let t = template {
+                if template != nil {
                     customValue = 0
                 }
             }
@@ -148,9 +148,9 @@ struct AddCharacterSkillView: View {
             isPresented = false
 
         case .fromTemplate:
-            guard let t = template else { return }
+            guard let template else { return }
 
-            let skill = CharacterSkill(template: t, value: customValue)
+            let skill = CharacterSkill(template: template, value: customValue)
 
             if customizeForCharacter {
                 let n = customName.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -158,10 +158,10 @@ struct AddCharacterSkillView: View {
                 if !n.isEmpty || customValue != 0 {
                     skill.isBranched = true
                     skill.branchedDate = Date()
-                    skill.overrideName = n.isEmpty ? t.name : n
-                    skill.overrideCategory = t.category
-                    skill.overrideDescription = t.templateDescription
-                    skill.overrideUserKeywords = t.userKeywords
+                    skill.overrideName = n.isEmpty ? template.name : n
+                    skill.overrideCategory = template.category
+                    skill.overrideDescription = template.templateDescription
+                    skill.overrideUserKeywords = template.userKeywords
                     skill.value = customValue
                 }
             }
