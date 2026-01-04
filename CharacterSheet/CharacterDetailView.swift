@@ -31,6 +31,14 @@ struct CharacterDetailView: View {
             .sorted { $0.displayOrder < $1.displayOrder }
     }
 
+    private var attributesByCategory: [(String, [Stat])] {
+        let categories = ["Body", "Mind", "Spirit", "Occult"]
+        return categories.compactMap { category in
+            let stats = attributes.filter { $0.category == category }
+            return stats.isEmpty ? nil : (category, stats)
+        }
+    }
+
     private var naturalSkills: [Stat] {
         character.stats
             .filter { $0.statType == "skill" && $0.category == "Natural Skills" }
@@ -38,7 +46,21 @@ struct CharacterDetailView: View {
     }
 
     private var learnedSkills: [CharacterSkill] {
-        character.learnedSkills.sorted { $0.effectiveName.localizedCaseInsensitiveCompare($1.effectiveName) == .orderedAscending }
+        character.learnedSkills
+            .filter { $0.effectiveCategory == "Learned Skills" }
+            .sorted { $0.effectiveName.localizedCaseInsensitiveCompare($1.effectiveName) == .orderedAscending }
+    }
+
+    private var lores: [CharacterSkill] {
+        character.learnedSkills
+            .filter { $0.effectiveCategory == "Lores" }
+            .sorted { $0.effectiveName.localizedCaseInsensitiveCompare($1.effectiveName) == .orderedAscending }
+    }
+
+    private var tongues: [CharacterSkill] {
+        character.learnedSkills
+            .filter { $0.effectiveCategory == "Tongues" }
+            .sorted { $0.effectiveName.localizedCaseInsensitiveCompare($1.effectiveName) == .orderedAscending }
     }
 
     private var goalRolls: [CharacterGoalRoll] {
@@ -87,53 +109,180 @@ struct CharacterDetailView: View {
             }
 
             Section("Attributes") {
-                ForEach(attributes) { stat in
-                    valueRowForStat(stat)
+                ForEach(attributesByCategory, id: \.0) { (category, stats) in
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(category)
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.secondary)
+                            .padding(.top, 4)
+
+                        ForEach(stats) { stat in
+                            statDisclosureRow(stat)
+                        }
+                    }
+                    .padding(.vertical, 4)
                 }
             }
 
             Section("Natural Skills") {
                 ForEach(naturalSkills) { stat in
-                    valueRowForStat(stat)
+                    statDisclosureRow(stat)
                 }
             }
 
             Section {
                 HStack {
-                    Text("Learned Skills / Lores / Tongues")
+                    Text("Learned Skills")
                         .font(.headline)
                     Spacer()
 
-                    // Show button if no available templates, menu if templates exist
-                    if !availableSkillTemplates.isEmpty {
+                    // Minimal add button
+                    if !availableSkillTemplates.filter({ $0.category == "Learned Skills" }).isEmpty {
                         Menu {
-                            Button("New…") { showingAddSkillNew = true }
-                            Button("From Template…") { showingSkillTemplatePicker = true }
+                            Button("New…") {
+                                showingAddSkillNew = true
+                            }
+                            Button("From Template…") {
+                                showingSkillTemplatePicker = true
+                            }
                         } label: {
                             Image(systemName: "plus.circle.fill")
-                                .font(.title3)
+                                .foregroundStyle(.blue)
                         }
                     } else {
                         Button {
                             showingAddSkillNew = true
                         } label: {
                             Image(systemName: "plus.circle.fill")
-                                .font(.title3)
+                                .foregroundStyle(.blue)
+                        }
+                    }
+                }
+
+                if learnedSkills.isEmpty {
+                    Text("No learned skills yet.")
+                        .foregroundStyle(.secondary)
+                        .font(.callout)
+                } else {
+                    ForEach(learnedSkills) { skill in
+                        skillDisclosureRow(skill)
+                            .contextMenu {
+                                Button(role: .destructive) {
+                                    modelContext.delete(skill)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
+                    }
+                    .onDelete { offsets in
+                        offsets.forEach { index in
+                            modelContext.delete(learnedSkills[index])
                         }
                     }
                 }
             }
 
             Section {
-                if learnedSkills.isEmpty {
-                    Text("No learned skills yet.")
-                        .foregroundStyle(.secondary)
-                } else {
-                    ForEach(learnedSkills) { skill in
-                        valueRowForLearnedSkill(skill)
+                HStack {
+                    Text("Lores")
+                        .font(.headline)
+                    Spacer()
+
+                    // Minimal add button
+                    if !availableSkillTemplates.filter({ $0.category == "Lores" }).isEmpty {
+                        Menu {
+                            Button("New…") {
+                                showingAddSkillNew = true
+                            }
+                            Button("From Template…") {
+                                showingSkillTemplatePicker = true
+                            }
+                        } label: {
+                            Image(systemName: "plus.circle.fill")
+                                .foregroundStyle(.blue)
+                        }
+                    } else {
+                        Button {
+                            showingAddSkillNew = true
+                        } label: {
+                            Image(systemName: "plus.circle.fill")
+                                .foregroundStyle(.blue)
+                        }
                     }
-                    .onDelete { idx in
-                        for i in idx { character.learnedSkills.remove(at: i) }
+                }
+
+                if lores.isEmpty {
+                    Text("No lores yet.")
+                        .foregroundStyle(.secondary)
+                        .font(.callout)
+                } else {
+                    ForEach(lores) { skill in
+                        skillDisclosureRow(skill)
+                            .contextMenu {
+                                Button(role: .destructive) {
+                                    modelContext.delete(skill)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
+                    }
+                    .onDelete { offsets in
+                        offsets.forEach { index in
+                            modelContext.delete(lores[index])
+                        }
+                    }
+                }
+            }
+
+            Section {
+                HStack {
+                    Text("Tongues")
+                        .font(.headline)
+                    Spacer()
+
+                    // Minimal add button
+                    if !availableSkillTemplates.filter({ $0.category == "Tongues" }).isEmpty {
+                        Menu {
+                            Button("New…") {
+                                showingAddSkillNew = true
+                            }
+                            Button("From Template…") {
+                                showingSkillTemplatePicker = true
+                            }
+                        } label: {
+                            Image(systemName: "plus.circle.fill")
+                                .foregroundStyle(.blue)
+                        }
+                    } else {
+                        Button {
+                            showingAddSkillNew = true
+                        } label: {
+                            Image(systemName: "plus.circle.fill")
+                                .foregroundStyle(.blue)
+                        }
+                    }
+                }
+
+                if tongues.isEmpty {
+                    Text("No tongues yet.")
+                        .foregroundStyle(.secondary)
+                        .font(.callout)
+                } else {
+                    ForEach(tongues) { skill in
+                        skillDisclosureRow(skill)
+                            .contextMenu {
+                                Button(role: .destructive) {
+                                    modelContext.delete(skill)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
+                    }
+                    .onDelete { offsets in
+                        offsets.forEach { index in
+                            modelContext.delete(tongues[index])
+                        }
                     }
                 }
             }
@@ -266,87 +415,136 @@ struct CharacterDetailView: View {
 
     // MARK: - Row builders
 
-    private func valueRowForStat(_ stat: Stat) -> some View {
-        HStack {
-            NavigationLink {
-                StatDetailView(stat: stat)
-            } label: {
+    @ViewBuilder
+    private func statDisclosureRow(_ stat: Stat) -> some View {
+        DisclosureGroup {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Base Value")
+                    Spacer()
+                    Text("\(stat.value)")
+                        .fontWeight(.medium)
+                }
+
+                HStack {
+                    Text("Effective Value")
+                    Spacer()
+                    Text("\(stat.value)")
+                        .fontWeight(.medium)
+                        .foregroundStyle(.secondary)
+                }
+
+                Divider()
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Keywords")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Text(stat.implicitKeywords.joined(separator: ", "))
+                        .font(.caption)
+                }
+            }
+            .padding(.vertical, 4)
+        } label: {
+            HStack {
                 Text(stat.name)
+
+                Spacer()
+
+                Button {
+                    stat.value -= 1
+                    if stat.value < stat.minimumValue { stat.value = stat.minimumValue }
+                } label: {
+                    Image(systemName: "minus.circle")
+                }
+                .buttonStyle(.plain)
+
+                Text("\(stat.value)")
+                    .frame(width: 44)
+                    .font(.headline)
+
+                Button {
+                    stat.value += 1
+                } label: {
+                    Image(systemName: "plus.circle")
+                }
+                .buttonStyle(.plain)
             }
-
-            Spacer()
-
-            Button {
-                stat.value -= 1
-                if stat.value < stat.minimumValue { stat.value = stat.minimumValue }
-            } label: {
-                Image(systemName: "minus.circle")
-            }
-            .buttonStyle(.plain)
-
-            Text("\(stat.value)")
-                .frame(width: 44)
-                .font(.headline)
-
-            Button {
-                stat.value += 1
-            } label: {
-                Image(systemName: "plus.circle")
-            }
-            .buttonStyle(.plain)
         }
     }
 
-    private func valueRowForLearnedSkill(_ skill: CharacterSkill) -> some View {
-        HStack {
-            NavigationLink {
-                CharacterSkillEditView(skill: skill, library: library)
-            } label: {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(skill.effectiveName)
-                    Text(skill.effectiveCategory)
-                        .font(.footnote)
+    @ViewBuilder
+    private func skillDisclosureRow(_ skill: CharacterSkill) -> some View {
+        DisclosureGroup {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Base Value")
+                    Spacer()
+                    Text("\(skill.value)")
+                        .fontWeight(.medium)
+                }
+
+                HStack {
+                    Text("Effective Value")
+                    Spacer()
+                    Text("\(skill.value)")
+                        .fontWeight(.medium)
                         .foregroundStyle(.secondary)
                 }
-            }
 
-            Spacer()
+                Divider()
 
-            Button {
-                skill.value -= 1
-                if skill.value < skill.minimumValue { skill.value = skill.minimumValue }
-            } label: {
-                Image(systemName: "minus.circle")
-            }
-            .buttonStyle(.plain)
-
-            ZStack {
-                if focusedSkillID == skill.persistentModelID {
-                    TextField("", value: Binding(
-                        get: { skill.value },
-                        set: { newVal in skill.value = max(newVal, skill.minimumValue) }
-                    ), format: .number)
-                        .frame(width: 44)
-                        .multilineTextAlignment(.center)
-                        .keyboardType(.numberPad)
-                        .focused($focusedSkillID, equals: skill.persistentModelID)
-                } else {
-                    Text("\(skill.value)")
-                        .frame(width: 44)
-                        .font(.headline)
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            focusedSkillID = skill.persistentModelID
-                        }
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Keywords")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Text(skill.keywordsForRules.joined(separator: ", "))
+                        .font(.caption)
                 }
             }
+            .padding(.vertical, 4)
+        } label: {
+            HStack {
+                Text(skill.effectiveName)
 
-            Button {
-                skill.value += 1
-            } label: {
-                Image(systemName: "plus.circle")
+                Spacer()
+
+                Button {
+                    skill.value -= 1
+                    if skill.value < skill.minimumValue { skill.value = skill.minimumValue }
+                } label: {
+                    Image(systemName: "minus.circle")
+                }
+                .buttonStyle(.plain)
+
+                ZStack {
+                    if focusedSkillID == skill.persistentModelID {
+                        TextField("", value: Binding(
+                            get: { skill.value },
+                            set: { newVal in skill.value = max(newVal, skill.minimumValue) }
+                        ), format: .number)
+                            .frame(width: 44)
+                            .multilineTextAlignment(.center)
+                            .keyboardType(.numberPad)
+                            .focused($focusedSkillID, equals: skill.persistentModelID)
+                    } else {
+                        Text("\(skill.value)")
+                            .frame(width: 44)
+                            .font(.headline)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                focusedSkillID = skill.persistentModelID
+                            }
+                    }
+                }
+
+                Button {
+                    skill.value += 1
+                } label: {
+                    Image(systemName: "plus.circle")
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
         }
     }
     
