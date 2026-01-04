@@ -14,10 +14,7 @@ struct AddCharacterSkillView: View {
 
     // Shared fields
     @State private var name: String = ""
-    @State private var description: String = ""
-    @State private var keywords: String = ""
     @State private var category: String = "Learned Skills"
-    @State private var startingValue: Int = 0
 
     private var template: SkillTemplate? {
         guard case .fromTemplate(let id) = mode else { return nil }
@@ -47,30 +44,6 @@ struct AddCharacterSkillView: View {
                             Text("Learned Skills").tag("Learned Skills")
                             Text("Lores").tag("Lores")
                             Text("Tongues").tag("Tongues")
-                        }
-
-                        TextField("Keywords (comma-separated)", text: $keywords)
-                            .autocorrectionDisabled()
-
-                        ZStack(alignment: .topLeading) {
-                            if description.isEmpty {
-                                Text("Description (optional)...")
-                                    .foregroundStyle(.secondary)
-                                    .padding(.top, 8)
-                                    .padding(.leading, 4)
-                                    .allowsHitTesting(false)
-                            }
-                            TextEditor(text: $description)
-                                .frame(minHeight: 100)
-                        }
-
-                    }
-
-                    Section("Starting Value") {
-                        Stepper(value: $startingValue, in: 0...50) {
-                            Text("\(startingValue)")
-                                .font(.title3)
-                                .fontWeight(.semibold)
                         }
                     }
 
@@ -121,12 +94,12 @@ struct AddCharacterSkillView: View {
             let template = SkillTemplate(
                 name: trimmedName,
                 category: category,
-                templateDescription: description,
-                userKeywords: keywords
+                templateDescription: "",
+                userKeywords: ""
             )
 
             library.skillTemplates.append(template)
-            let skill = CharacterSkill(template: template, value: startingValue)
+            let skill = CharacterSkill(template: template, value: 1)
             character.learnedSkills.append(skill)
             isPresented = false
 

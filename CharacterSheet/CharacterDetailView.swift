@@ -16,12 +16,6 @@ struct CharacterDetailView: View {
     @State private var showingSkillTemplatePicker = false
     @State private var showingRollTemplatePicker = false
 
-    @State private var showingAddSkillFromTemplate = false
-    @State private var showingAddRollFromTemplate = false
-
-    @State private var selectedSkillTemplateID: PersistentIdentifier?
-    @State private var selectedRollTemplateID: PersistentIdentifier?
-
     // Inline value editing focus (tap number to type)
     @FocusState private var focusedStatID: PersistentIdentifier?
     @FocusState private var focusedSkillID: PersistentIdentifier?
@@ -231,8 +225,10 @@ struct CharacterDetailView: View {
                 },
                 rowSearchText: { $0.userKeywords }
             ) { picked in
-                selectedSkillTemplateID = picked.persistentModelID
-                showingAddSkillFromTemplate = true
+                // Add skill directly with value 1
+                let newSkill = CharacterSkill(template: picked, value: 1)
+                character.learnedSkills.append(newSkill)
+                showingSkillTemplatePicker = false
             }
         }
         .sheet(isPresented: $showingRollTemplatePicker) {
@@ -248,19 +244,22 @@ struct CharacterDetailView: View {
                 },
                 rowSearchText: { $0.userKeywords }
             ) { picked in
-                selectedRollTemplateID = picked.persistentModelID
-                showingAddRollFromTemplate = true
-            }
-        }
-        // MARK: - Add-from-template sheets (with optional customization)
-        .sheet(isPresented: $showingAddSkillFromTemplate) {
-            if let lib = library, let id = selectedSkillTemplateID {
-                AddCharacterSkillView(character: character, library: lib, isPresented: $showingAddSkillFromTemplate, mode: .fromTemplate(id))
-            }
-        }
-        .sheet(isPresented: $showingAddRollFromTemplate) {
-            if let lib = library, let id = selectedRollTemplateID {
-                AddGoalRollView(character: character, library: lib, isPresented: $showingAddRollFromTemplate, mode: .fromTemplate(id))
+                // Auto-add missing learned skill if needed
+                if picked.defaultSkillMode == .learned,
+                   let skillTemplate = picked.defaultLearnedSkillTemplate {
+                    let hasSkill = character.learnedSkills.contains {
+                        $0.template?.persistentModelID == skillTemplate.persistentModelID
+                    }
+                    if !hasSkill {
+                        let newSkill = CharacterSkill(template: skillTemplate, value: 0)
+                        character.learnedSkills.append(newSkill)
+                    }
+                }
+
+                // Add goal roll
+                let newRoll = CharacterGoalRoll(template: picked)
+                character.goalRolls.append(newRoll)
+                showingRollTemplatePicker = false
             }
         }
     }
@@ -269,7 +268,11 @@ struct CharacterDetailView: View {
 
     private func valueRowForStat(_ stat: Stat) -> some View {
         HStack {
-            Text(stat.name)
+            NavigationLink {
+                StatDetailView(stat: stat)
+            } label: {
+                Text(stat.name)
+            }
 
             Spacer()
 

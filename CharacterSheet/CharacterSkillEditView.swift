@@ -11,8 +11,6 @@ struct CharacterSkillEditView: View {
     @State private var showingTemplateEdit = false
     @State private var showingDeleteAlert = false
 
-    @FocusState private var valueFocused: Bool
-    
     var body: some View {
         Form {
             Section("Name") {
@@ -20,110 +18,46 @@ struct CharacterSkillEditView: View {
                     TextField("Name", text: $skill.overrideName)
                         .autocorrectionDisabled()
                 } else {
-                    Button { showingBranchAlert = true } label: {
-                        HStack {
-                            Text(skill.effectiveName)
-                            Spacer()
-                            Image(systemName: "pencil").foregroundStyle(.secondary)
+                    HStack {
+                        Text(skill.effectiveName)
+                        Spacer()
+                        Button {
+                            showingBranchAlert = true
+                        } label: {
+                            Image(systemName: "pencil")
+                                .foregroundStyle(.secondary)
                         }
                     }
                 }
             }
-            
+
             Section("Category") {
                 Text(skill.effectiveCategory)
                     .foregroundStyle(.secondary)
             }
-            
-            Section("Value") {
-                VStack(spacing: 16) {
-                    Text("\(skill.value)")
-                        .font(.system(size: 56, weight: .bold, design: .rounded))
-                    
-                    TextField("Value", value: $skill.value, format: .number)
-                        .keyboardType(.numberPad)
-                        .focused($valueFocused)
-                        .multilineTextAlignment(.center)
-                        .font(.title2)
-                        .onChange(of: skill.value) { _, _ in
-                            enforceMinimum()
-                        }
-                    
-                    HStack(spacing: 28) {
-                        Button {
-                            skill.value -= 1
-                            enforceMinimum()
-                        } label: {
-                            Image(systemName: "minus.circle.fill")
-                                .font(.system(size: 44))
-                        }
-                        .buttonStyle(.borderless)
-                        
-                        Button {
-                            skill.value += 1
-                        } label: {
-                            Image(systemName: "plus.circle.fill")
-                                .font(.system(size: 44))
-                        }
-                        .buttonStyle(.borderless)
-                    }
-                }
-                .padding(.vertical, 8)
-            }
-            
-            Section("Description") {
-                if skill.isBranched {
-                    ZStack(alignment: .topLeading) {
-                        if skill.overrideDescription.isEmpty {
-                            Text("Description (optional)...")
-                                .foregroundStyle(.secondary)
-                                .padding(.top, 8)
-                                .padding(.leading, 4)
-                                .allowsHitTesting(false)
-                        }
-                        TextEditor(text: $skill.overrideDescription)
-                            .frame(minHeight: 100)
-                    }
 
-                } else {
-                    Button("Edit Description") { showingBranchAlert = true }
-                    if !skill.effectiveDescription.isEmpty {
-                        Text(skill.effectiveDescription)
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                    }
+            Section {
+                HStack {
+                    Text("Base Value")
+                    Spacer()
+                    Text("\(skill.value)")
+                        .font(.headline)
                 }
-            }
-            
-            Section("Keywords") {
-                if skill.isBranched {
-                    TextField("Comma-separated", text: $skill.overrideUserKeywords)
-                        .autocorrectionDisabled()
-                } else {
-                    Button("Edit Keywords") { showingBranchAlert = true }
-                    if !skill.effectiveUserKeywords.isEmpty {
-                        Text(skill.effectiveUserKeywords)
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
-            
-            Section("Template Keywords") {
-                if let t = skill.template {
-                    Text(t.keywordsForRules.joined(separator: ", "))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                } else {
-                    Text("Missing template reference.")
-                        .font(.caption)
+
+                // Show effective value and modifiers breakdown here
+                // TODO: Add modifier calculation and display
+                HStack {
+                    Text("Effective Value")
+                    Spacer()
+                    Text("\(skill.value)")
+                        .font(.headline)
                         .foregroundStyle(.secondary)
                 }
             }
-            
-            Section("Keywords for This Character") {
+
+            Section("All Keywords") {
                 Text(skill.keywordsForRules.joined(separator: ", "))
-                    .font(.caption)
+                    .font(.callout)
                     .foregroundStyle(.secondary)
             }
             
@@ -152,14 +86,8 @@ struct CharacterSkillEditView: View {
                 }
             }
         }
-        .navigationTitle("Edit Skill")
+        .navigationTitle("Skill Details")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-                Button("Done") { valueFocused = false }
-            }
-        }
         .alert("Edit Library Item?", isPresented: $showingBranchAlert) {
             Button("Edit Library") { showingTemplateEdit = true }
             Button("Create Local Override") { createBranch() }
@@ -190,23 +118,17 @@ struct CharacterSkillEditView: View {
             }
         }
     }
-    
-    private func enforceMinimum() {
-        if skill.value < skill.minimumValue {
-            skill.value = skill.minimumValue
-        }
-    }
-    
+
     private func createBranch() {
         skill.overrideName = skill.effectiveName
         skill.overrideCategory = skill.effectiveCategory
-        skill.overrideDescription = skill.effectiveDescription
-        skill.overrideUserKeywords = skill.effectiveUserKeywords
-        
+        skill.overrideDescription = ""
+        skill.overrideUserKeywords = ""
+
         skill.isBranched = true
         skill.branchedDate = Date()
     }
-    
+
     private func revertToLibrary() {
         skill.isBranched = false
         skill.branchedDate = nil
