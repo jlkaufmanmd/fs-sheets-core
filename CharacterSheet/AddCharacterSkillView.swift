@@ -79,7 +79,7 @@ struct AddCharacterSkillView: View {
                     prompt: "Search templates",
                     items: templatesSorted,
                     name: { $0.name },
-                    subtitle: { $0.category },
+                    subtitle: { Optional($0.category) },
                     onPick: { picked in
                         selectedTemplateID = picked.persistentModelID
                     }
