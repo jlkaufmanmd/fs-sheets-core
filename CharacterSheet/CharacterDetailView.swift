@@ -84,6 +84,24 @@ struct CharacterDetailView: View {
         return library.goalRollTemplates.filter { !existingTemplateIDs.contains($0.persistentModelID) }
     }
 
+    // Category-specific template filters
+    private var learnedSkillTemplates: [SkillTemplate] {
+        availableSkillTemplates.filter { $0.category == "Learned Skills" }
+    }
+
+    private var loreTemplates: [SkillTemplate] {
+        availableSkillTemplates.filter { $0.category == "Lores" }
+    }
+
+    private var tongueTemplates: [SkillTemplate] {
+        availableSkillTemplates.filter { $0.category == "Tongues" }
+    }
+
+    // Currently selected category templates for picker sheet
+    private var templatesByCategory: [SkillTemplate] {
+        availableSkillTemplates.filter { $0.category == selectedSkillCategory }
+    }
+
     var body: some View {
         Form {
             Section("Character") {
@@ -141,8 +159,7 @@ struct CharacterDetailView: View {
                     Spacer()
 
                     // Category-aware add button
-                    let categoryTemplates = availableSkillTemplates.filter({ $0.category == "Learned Skills" })
-                    if !categoryTemplates.isEmpty {
+                    if !learnedSkillTemplates.isEmpty {
                         Menu {
                             Button("New…") {
                                 selectedSkillCategory = "Learned Skills"
@@ -197,8 +214,7 @@ struct CharacterDetailView: View {
                     Spacer()
 
                     // Category-aware add button
-                    let categoryTemplates = availableSkillTemplates.filter({ $0.category == "Lores" })
-                    if !categoryTemplates.isEmpty {
+                    if !loreTemplates.isEmpty {
                         Menu {
                             Button("New…") {
                                 selectedSkillCategory = "Lores"
@@ -253,8 +269,7 @@ struct CharacterDetailView: View {
                     Spacer()
 
                     // Category-aware add button
-                    let categoryTemplates = availableSkillTemplates.filter({ $0.category == "Tongues" })
-                    if !categoryTemplates.isEmpty {
+                    if !tongueTemplates.isEmpty {
                         Menu {
                             Button("New…") {
                                 selectedSkillCategory = "Tongues"
@@ -377,11 +392,10 @@ struct CharacterDetailView: View {
         }
         // MARK: - Template pickers
         .sheet(isPresented: $showingSkillTemplatePicker) {
-            let filteredTemplates = availableSkillTemplates.filter { $0.category == selectedSkillCategory }
             SearchableTemplatePickerSheet(
                 title: "\(selectedSkillCategory) Templates",
                 prompt: "Type to filter. Pick a template to add it to this character.",
-                templates: filteredTemplates,
+                templates: templatesByCategory,
                 sectionTitle: { $0.category },
                 rowTitle: { $0.name },
                 rowSubtitle: { t in
