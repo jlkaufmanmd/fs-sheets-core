@@ -24,7 +24,7 @@ struct ContentView: View {
                     } else {
                         ForEach(characters) { c in
                             NavigationLink(c.name) {
-                                CharacterDetailView(character: c, library: libraries.first)
+                                CharacterDetailView(character: c)
                             }
                         }
                         .onDelete(perform: deleteCharacters)
