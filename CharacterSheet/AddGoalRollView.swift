@@ -20,9 +20,8 @@ struct AddGoalRollView: View {
 
     // Formula selection for NEW template defaults
     @State private var selectedAttributeID: PersistentIdentifier?
-    @State private var skillMode: GoalRollTemplate.SkillMode = .natural
     @State private var selectedNaturalSkillID: PersistentIdentifier?
-    @State private var selectedLearnedTemplateID: PersistentIdentifier?
+    @State private var selectedLearnedSkillID: PersistentIdentifier?
 
     // Template mode customization
     @State private var customizeForCharacter: Bool = false
@@ -47,14 +46,31 @@ struct AddGoalRollView: View {
             .filter { $0.statType == "skill" && $0.category == "Natural Skills" }
             .sorted { $0.displayOrder < $1.displayOrder }
     }
-
-    private var learnedTemplates: [SkillTemplate] {
-        let order = ["Learned Skills", "Lores", "Tongues"]
-        return order.flatMap { cat in
-            library.skillTemplates
-                .filter { $0.category == cat }
-                .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    
+    private var learnedSkillsByCategory: [(String, [CharacterSkill])] {
+        let categories = ["Learned Skills", "Lores", "Tongues"]
+        return categories.compactMap { cat in
+            let skills = character.learnedSkills
+                .filter { $0.effectiveCategory == cat }
+                .sorted { $0.effectiveName.localizedCaseInsensitiveCompare($1.effectiveName) == .orderedAscending }
+            return skills.isEmpty ? nil : (cat, skills)
         }
+    }
+    
+    private var selectedAttribute: Stat? {
+        attributes.first(where: { $0.persistentModelID == selectedAttributeID })
+    }
+    
+    private var selectedSkill: (name: String, isNatural: Bool)? {
+        if let natID = selectedNaturalSkillID,
+           let skill = naturalSkills.first(where: { $0.persistentModelID == natID }) {
+            return (skill.name, true)
+        }
+        if let learnedID = selectedLearnedSkillID,
+           let skill = character.learnedSkills.first(where: { $0.persistentModelID == learnedID }) {
+            return (skill.effectiveName, false)
+        }
+        return nil
     }
 
     private var canAdd: Bool {
@@ -63,8 +79,7 @@ struct AddGoalRollView: View {
             let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !trimmed.isEmpty else { return false }
             guard selectedAttributeID != nil else { return false }
-            if skillMode == .natural { return selectedNaturalSkillID != nil }
-            return selectedLearnedTemplateID != nil
+            return selectedNaturalSkillID != nil || selectedLearnedSkillID != nil
         case .fromTemplate:
             return template != nil
         }
@@ -94,7 +109,6 @@ struct AddGoalRollView: View {
                             TextEditor(text: $description)
                                 .frame(minHeight: 110)
                         }
-
                     }
 
                     Section("Base Modifier") {
@@ -106,43 +120,53 @@ struct AddGoalRollView: View {
                     }
 
                     Section("Formula") {
+                        // Attribute Picker - no category prefix
                         Picker("Attribute", selection: $selectedAttributeID) {
                             Text("Select...").tag(nil as PersistentIdentifier?)
                             ForEach(attributes) { a in
-                                Text("\(a.category): \(a.name)").tag(a.persistentModelID as PersistentIdentifier?)
+                                Text(a.name).tag(a.persistentModelID as PersistentIdentifier?)
                             }
                         }
 
-                        Picker("Skill Type", selection: $skillMode) {
-                            ForEach(GoalRollTemplate.SkillMode.allCases, id: \.self) { m in
-                                Text(m.rawValue).tag(m)
-                            }
-                        }
-                        .pickerStyle(.segmented)
-
-                        if skillMode == .natural {
-                            Picker("Natural Skill", selection: $selectedNaturalSkillID) {
-                                Text("Select...").tag(nil as PersistentIdentifier?)
-                                ForEach(naturalSkills) { s in
-                                    Text(s.name).tag(s.persistentModelID as PersistentIdentifier?)
+                        // Skill Picker with hierarchical menu
+                        HStack {
+                            Text("Skill")
+                            Spacer()
+                            Menu {
+                                // Natural Skills submenu
+                                Menu("Natural Skills") {
+                                    ForEach(naturalSkills) { skill in
+                                        Button(skill.name) {
+                                            selectedNaturalSkillID = skill.persistentModelID
+                                            selectedLearnedSkillID = nil
+                                        }
+                                    }
                                 }
-                            }
-                        } else {
-                            Picker("Learned Skill Template", selection: $selectedLearnedTemplateID) {
-                                Text("Select...").tag(nil as PersistentIdentifier?)
-                                ForEach(learnedTemplates) { t in
-                                    Text("\(t.category): \(t.name)").tag(t.persistentModelID as PersistentIdentifier?)
+                                
+                                // Learned Skills, Lores, Tongues submenus
+                                ForEach(learnedSkillsByCategory, id: \.0) { (category, skills) in
+                                    Menu(category) {
+                                        ForEach(skills) { skill in
+                                            Button(skill.effectiveName) {
+                                                selectedLearnedSkillID = skill.persistentModelID
+                                                selectedNaturalSkillID = nil
+                                            }
+                                        }
+                                    }
                                 }
+                            } label: {
+                                Text(selectedSkill?.name ?? "Select...")
+                                    .foregroundStyle(selectedSkill == nil ? .secondary : .primary)
                             }
                         }
                     }
 
                 case .fromTemplate:
                     Section("Template") {
-                        if let t = template {
-                            Text(t.name).font(.headline)
-                            if !t.templateDescription.isEmpty {
-                                Text(t.templateDescription)
+                        if let template {
+                            Text(template.name).font(.headline)
+                            if !template.templateDescription.isEmpty {
+                                Text(template.templateDescription)
                                     .font(.callout)
                                     .foregroundStyle(.secondary)
                             }
@@ -177,7 +201,6 @@ struct AddGoalRollView: View {
                                     .frame(minHeight: 110)
                             }
 
-
                             Stepper(value: $customBaseModifier, in: -50...50) {
                                 Text("Base Modifier: \(customBaseModifier)")
                                     .fontWeight(.semibold)
@@ -195,25 +218,6 @@ struct AddGoalRollView: View {
                         .disabled(!canAdd)
                 }
             }
-            .onAppear {
-                if let t = template {
-                    customName = ""
-                    customDescription = ""
-                    customKeywords = ""
-                    customBaseModifier = t.baseModifier
-                } else {
-                    // sensible defaults for new
-                    if selectedAttributeID == nil { selectedAttributeID = attributes.first?.persistentModelID }
-                    if selectedNaturalSkillID == nil { selectedNaturalSkillID = naturalSkills.first?.persistentModelID }
-                }
-            }
-            .onChange(of: skillMode) { _, newValue in
-                if newValue == .natural {
-                    selectedLearnedTemplateID = nil
-                } else {
-                    selectedNaturalSkillID = nil
-                }
-            }
         }
     }
 
@@ -227,67 +231,67 @@ struct AddGoalRollView: View {
     private func add() {
         switch mode {
         case .new:
-            guard let attrID = selectedAttributeID,
-                  let attr = character.stats.first(where: { $0.persistentModelID == attrID })
-            else { return }
+            let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { return }
+            guard let selectedAttr = selectedAttribute else { return }
 
-            let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmedName.isEmpty else { return }
-
-            let template = GoalRollTemplate(
-                name: trimmedName,
-                templateDescription: description,
-                baseModifier: baseModifier,
-                userKeywords: keywords
-            )
-
-            // Template defaults from current selections
-            template.defaultAttributeCategory = attr.category
-            template.defaultAttributeName = attr.name
-
-            template.defaultSkillMode = skillMode
-            if skillMode == .natural {
-                guard let nsID = selectedNaturalSkillID,
-                      let s = character.stats.first(where: { $0.persistentModelID == nsID })
-                else { return }
-                template.defaultNaturalSkillName = s.name
-                template.defaultLearnedSkillTemplate = nil
+            // Determine skill mode and get appropriate skill reference
+            var skillMode: GoalRollTemplate.SkillMode = .natural
+            var natSkillName = ""
+            var learnedTemplate: SkillTemplate? = nil
+            
+            if let natID = selectedNaturalSkillID,
+               let natSkill = naturalSkills.first(where: { $0.persistentModelID == natID }) {
+                skillMode = .natural
+                natSkillName = natSkill.name
+            } else if let learnedID = selectedLearnedSkillID,
+                      let learnedSkill = character.learnedSkills.first(where: { $0.persistentModelID == learnedID }) {
+                skillMode = .learned
+                learnedTemplate = learnedSkill.template
             } else {
-                guard let ltID = selectedLearnedTemplateID,
-                      let learned = library.skillTemplates.first(where: { $0.persistentModelID == ltID })
-                else { return }
-                template.defaultNaturalSkillName = ""
-                template.defaultLearnedSkillTemplate = learned
+                return
             }
 
+            let template = GoalRollTemplate(
+                name: trimmed,
+                templateDescription: description,
+                baseModifier: baseModifier,
+                userKeywords: keywords,
+                defaultAttributeName: selectedAttr.name,
+                defaultAttributeCategory: selectedAttr.category,
+                defaultSkillMode: skillMode,
+                defaultNaturalSkillName: natSkillName,
+                defaultLearnedSkillTemplate: learnedTemplate
+            )
+
             library.goalRollTemplates.append(template)
-            let roll = CharacterGoalRoll(template: template)
+            
+            let roll = CharacterGoalRoll(
+                template: template,
+                attributeStat: nil,
+                naturalSkillStat: nil,
+                characterSkill: nil
+            )
             character.goalRolls.append(roll)
             isPresented = false
 
         case .fromTemplate:
-            guard let t = template else { return }
+            guard let template else { return }
 
-            let roll = CharacterGoalRoll(template: t)
+            let roll = CharacterGoalRoll(template: template)
 
             if customizeForCharacter {
                 let n = customName.trimmingCharacters(in: .whitespacesAndNewlines)
-                let d = customDescription
-                let k = customKeywords
+                let k = customKeywords.trimmingCharacters(in: .whitespacesAndNewlines)
+                let d = customDescription.trimmingCharacters(in: .whitespacesAndNewlines)
 
-                let hasAny =
-                    !n.isEmpty ||
-                    !d.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
-                    !k.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
-                    customBaseModifier != t.baseModifier
-
-                if hasAny {
+                if !n.isEmpty || !k.isEmpty || !d.isEmpty || customBaseModifier != 0 {
                     roll.isBranched = true
                     roll.branchedDate = Date()
-                    roll.overrideName = n.isEmpty ? t.name : n
-                    roll.overrideDescription = d.isEmpty ? t.templateDescription : d
-                    roll.overrideUserKeywords = k.isEmpty ? t.userKeywords : k
-                    roll.overrideBaseModifier = customBaseModifier
+                    roll.overrideName = n.isEmpty ? template.name : n
+                    roll.overrideDescription = d.isEmpty ? template.templateDescription : d
+                    roll.overrideUserKeywords = k.isEmpty ? template.userKeywords : k
+                    roll.overrideBaseModifier = customBaseModifier != 0 ? customBaseModifier : template.baseModifier
                 }
             }
 

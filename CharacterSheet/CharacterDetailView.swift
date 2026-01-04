@@ -96,14 +96,23 @@ struct CharacterDetailView: View {
                     Text("Learned Skills / Lores / Tongues")
                         .font(.headline)
                     Spacer()
-                    Menu {
-                        Button("New…") { showingAddSkillNew = true }
-                        if let library, !library.skillTemplates.isEmpty {
+                    
+                    // Show button if no templates, menu if templates exist
+                    if let library, !library.skillTemplates.isEmpty {
+                        Menu {
+                            Button("New…") { showingAddSkillNew = true }
                             Button("From Template…") { showingSkillTemplatePicker = true }
+                        } label: {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.title3)
                         }
-                    } label: {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.title3)
+                    } else {
+                        Button {
+                            showingAddSkillNew = true
+                        } label: {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.title3)
+                        }
                     }
                 }
             }
@@ -127,14 +136,23 @@ struct CharacterDetailView: View {
                     Text("Goal Rolls")
                         .font(.headline)
                     Spacer()
-                    Menu {
-                        Button("New…") { showingAddRollNew = true }
-                        if let library, !library.goalRollTemplates.isEmpty {
+                    
+                    // Show button if no templates, menu if templates exist
+                    if let library, !library.goalRollTemplates.isEmpty {
+                        Menu {
+                            Button("New…") { showingAddRollNew = true }
                             Button("From Template…") { showingRollTemplatePicker = true }
+                        } label: {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.title3)
                         }
-                    } label: {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.title3)
+                    } else {
+                        Button {
+                            showingAddRollNew = true
+                        } label: {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.title3)
+                        }
                     }
                 }
             }
@@ -164,16 +182,6 @@ struct CharacterDetailView: View {
         }
         .navigationTitle(character.name)
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-                Button("Done") {
-                    focusedStatID = nil
-                    focusedSkillID = nil
-                    isNameFieldFocused = false
-                }
-            }
-        }
         .alert("Duplicate Name", isPresented: $showingDuplicateNameAlert) {
             Button("OK") {
                 character.name = previousValidName
