@@ -91,12 +91,6 @@ struct AddCharacterSkillView: View {
                                 .foregroundStyle(.secondary)
                         }
                     }
-
-                    Section {
-                        Text("The skill will be added with a starting value of 0. You can change the value in the skill detail screen.")
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                    }
                 }
             }
             .navigationTitle(navigationTitle)
@@ -139,7 +133,7 @@ struct AddCharacterSkillView: View {
         case .fromTemplate:
             guard let template else { return }
 
-            let skill = CharacterSkill(template: template, value: 0)
+            let skill = CharacterSkill(template: template, value: 1)
             character.learnedSkills.append(skill)
             isPresented = false
         }

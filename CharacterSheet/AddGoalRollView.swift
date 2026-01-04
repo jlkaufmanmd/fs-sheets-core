@@ -168,12 +168,6 @@ struct AddGoalRollView: View {
                                 .foregroundStyle(.secondary)
                         }
                     }
-
-                    Section {
-                        Text("The goal roll will be added using the template's default formula and settings. You can customize it in the goal roll detail screen.")
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                    }
                 }
             }
             .navigationTitle(navigationTitle)
@@ -244,6 +238,18 @@ struct AddGoalRollView: View {
 
         case .fromTemplate:
             guard let template else { return }
+
+            // Auto-add missing learned skill if needed
+            if template.defaultSkillMode == .learned,
+               let skillTemplate = template.defaultLearnedSkillTemplate {
+                let hasSkill = character.learnedSkills.contains {
+                    $0.template?.persistentModelID == skillTemplate.persistentModelID
+                }
+                if !hasSkill {
+                    let newSkill = CharacterSkill(template: skillTemplate, value: 0)
+                    character.learnedSkills.append(newSkill)
+                }
+            }
 
             let roll = CharacterGoalRoll(template: template)
             character.goalRolls.append(roll)
