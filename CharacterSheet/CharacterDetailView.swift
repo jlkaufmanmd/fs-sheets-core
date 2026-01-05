@@ -9,13 +9,8 @@ struct CharacterDetailView: View {
     @Query(sort: \RPGCharacter.name) private var allCharacters: [RPGCharacter]
     private var library: RulesLibrary? { libraries.first }
 
-    // Sheets / pickers
-    @State private var showingAddSkillNew = false
+    // Quick add state
     @State private var showingAddRollNew = false
-
-    @State private var showingSkillTemplatePicker = false
-    @State private var showingRollTemplatePicker = false
-
     @State private var selectedSkillCategory: String = "Learned Skills"
     @State private var showingQuickAddSkill = false
     @State private var quickAddSkillName: String = ""
@@ -97,11 +92,6 @@ struct CharacterDetailView: View {
         availableSkillTemplates.filter { $0.category == "Tongues" }
     }
 
-    // Currently selected category templates for picker sheet
-    private var templatesByCategory: [SkillTemplate] {
-        availableSkillTemplates.filter { $0.category == selectedSkillCategory }
-    }
-
     var body: some View {
         Form {
             Section("Character") {
@@ -165,9 +155,14 @@ struct CharacterDetailView: View {
                                 selectedSkillCategory = "Learned Skills"
                                 showingQuickAddSkill = true
                             }
-                            Button("From Template…") {
-                                selectedSkillCategory = "Learned Skills"
-                                showingSkillTemplatePicker = true
+
+                            Divider()
+
+                            ForEach(learnedSkillTemplates) { template in
+                                Button(template.name) {
+                                    let newSkill = CharacterSkill(template: template, value: 1)
+                                    character.learnedSkills.append(newSkill)
+                                }
                             }
                         } label: {
                             Image(systemName: "plus.circle.fill")
@@ -220,9 +215,14 @@ struct CharacterDetailView: View {
                                 selectedSkillCategory = "Lores"
                                 showingQuickAddSkill = true
                             }
-                            Button("From Template…") {
-                                selectedSkillCategory = "Lores"
-                                showingSkillTemplatePicker = true
+
+                            Divider()
+
+                            ForEach(loreTemplates) { template in
+                                Button(template.name) {
+                                    let newSkill = CharacterSkill(template: template, value: 1)
+                                    character.learnedSkills.append(newSkill)
+                                }
                             }
                         } label: {
                             Image(systemName: "plus.circle.fill")
@@ -275,9 +275,14 @@ struct CharacterDetailView: View {
                                 selectedSkillCategory = "Tongues"
                                 showingQuickAddSkill = true
                             }
-                            Button("From Template…") {
-                                selectedSkillCategory = "Tongues"
-                                showingSkillTemplatePicker = true
+
+                            Divider()
+
+                            ForEach(tongueTemplates) { template in
+                                Button(template.name) {
+                                    let newSkill = CharacterSkill(template: template, value: 1)
+                                    character.learnedSkills.append(newSkill)
+                                }
                             }
                         } label: {
                             Image(systemName: "plus.circle.fill")
@@ -327,7 +332,28 @@ struct CharacterDetailView: View {
                     if !availableGoalRollTemplates.isEmpty {
                         Menu {
                             Button("New…") { showingAddRollNew = true }
-                            Button("From Template…") { showingRollTemplatePicker = true }
+
+                            Divider()
+
+                            ForEach(availableGoalRollTemplates) { template in
+                                Button(template.name) {
+                                    // Auto-add missing learned skill if needed
+                                    if template.defaultSkillMode == .learned,
+                                       let skillTemplate = template.defaultLearnedSkillTemplate {
+                                        let hasSkill = character.learnedSkills.contains {
+                                            $0.template?.persistentModelID == skillTemplate.persistentModelID
+                                        }
+                                        if !hasSkill {
+                                            let newSkill = CharacterSkill(template: skillTemplate, value: 0)
+                                            character.learnedSkills.append(newSkill)
+                                        }
+                                    }
+
+                                    // Add goal roll
+                                    let newRoll = CharacterGoalRoll(template: template)
+                                    character.goalRolls.append(newRoll)
+                                }
+                            }
                         } label: {
                             Image(systemName: "plus.circle.fill")
                                 .font(.title3)
@@ -379,35 +405,9 @@ struct CharacterDetailView: View {
             ensureLibraryExists()
             previousValidName = character.name
         }
-        // MARK: - New sheets
-        .sheet(isPresented: $showingAddSkillNew) {
-            if let lib = library {
-                AddCharacterSkillView(character: character, library: lib, isPresented: $showingAddSkillNew, mode: .new)
-            }
-        }
         .sheet(isPresented: $showingAddRollNew) {
             if let lib = library {
                 AddGoalRollView(character: character, library: lib, isPresented: $showingAddRollNew, mode: .new)
-            }
-        }
-        // MARK: - Template pickers
-        .sheet(isPresented: $showingSkillTemplatePicker) {
-            SearchableTemplatePickerSheet(
-                title: "\(selectedSkillCategory) Templates",
-                prompt: "Type to filter. Pick a template to add it to this character.",
-                templates: templatesByCategory,
-                sectionTitle: { $0.category },
-                rowTitle: { $0.name },
-                rowSubtitle: { t in
-                    let d = t.templateDescription.trimmingCharacters(in: .whitespacesAndNewlines)
-                    return d.isEmpty ? nil : d
-                },
-                rowSearchText: { $0.userKeywords }
-            ) { picked in
-                // Add skill directly with value 1
-                let newSkill = CharacterSkill(template: picked, value: 1)
-                character.learnedSkills.append(newSkill)
-                showingSkillTemplatePicker = false
             }
         }
         .alert("New \(selectedSkillCategory.dropLast(selectedSkillCategory == "Learned Skills" || selectedSkillCategory == "Natural Skills" ? 1 : 0))", isPresented: $showingQuickAddSkill) {
@@ -421,37 +421,6 @@ struct CharacterDetailView: View {
             }
         } message: {
             Text("Enter a name for the new skill")
-        }
-        .sheet(isPresented: $showingRollTemplatePicker) {
-            SearchableTemplatePickerSheet(
-                title: "Goal Roll Templates",
-                prompt: "Type to filter. Pick a template to add it to this character.",
-                templates: availableGoalRollTemplates,
-                sectionTitle: { _ in "Goal Rolls" },
-                rowTitle: { $0.name },
-                rowSubtitle: { t in
-                    let d = t.templateDescription.trimmingCharacters(in: .whitespacesAndNewlines)
-                    return d.isEmpty ? nil : d
-                },
-                rowSearchText: { $0.userKeywords }
-            ) { picked in
-                // Auto-add missing learned skill if needed
-                if picked.defaultSkillMode == .learned,
-                   let skillTemplate = picked.defaultLearnedSkillTemplate {
-                    let hasSkill = character.learnedSkills.contains {
-                        $0.template?.persistentModelID == skillTemplate.persistentModelID
-                    }
-                    if !hasSkill {
-                        let newSkill = CharacterSkill(template: skillTemplate, value: 0)
-                        character.learnedSkills.append(newSkill)
-                    }
-                }
-
-                // Add goal roll
-                let newRoll = CharacterGoalRoll(template: picked)
-                character.goalRolls.append(newRoll)
-                showingRollTemplatePicker = false
-            }
         }
     }
 
