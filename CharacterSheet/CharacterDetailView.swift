@@ -16,8 +16,6 @@ struct CharacterDetailView: View {
     @State private var quickAddSkillName: String = ""
     @State private var showingAddInitiative = false
     @State private var initiativeSubcategory: String = "Physical"
-    @State private var showingPhysicalCombatSheet = false
-    @State private var showingOccultCombatSheet = false
 
     // Inline value editing focus (tap number to type)
     @FocusState private var focusedStatID: PersistentIdentifier?
@@ -473,14 +471,32 @@ struct CharacterDetailView: View {
                         .foregroundStyle(.primary)
                     Spacer()
 
-                    // Combat metric add button - using sheet to avoid menu flicker
+                    // Combat metric add button
                     if !physicalCombatMetricTemplates.isEmpty || !skillsWithoutInitiative.isEmpty {
-                        Button {
-                            showingPhysicalCombatSheet = true
+                        Menu {
+                            if !skillsWithoutInitiative.isEmpty {
+                                Button("New Initiative…") {
+                                    initiativeSubcategory = "Physical"
+                                    showingAddInitiative = true
+                                }
+                            }
+
+                            if !physicalCombatMetricTemplates.isEmpty {
+                                if !skillsWithoutInitiative.isEmpty {
+                                    Divider()
+                                }
+                                ForEach(physicalCombatMetricTemplates) { template in
+                                    Button(template.name) {
+                                        let metric = CharacterCombatMetric(template: template)
+                                        character.combatMetrics.append(metric)
+                                    }
+                                }
+                            }
                         } label: {
                             Image(systemName: "plus.circle.fill")
                                 .foregroundStyle(.blue)
                         }
+                        .menuStyle(.button)
                         .buttonStyle(.borderless)
                     }
                 }
@@ -522,14 +538,32 @@ struct CharacterDetailView: View {
                         .foregroundStyle(.primary)
                     Spacer()
 
-                    // Combat metric add button - using sheet to avoid menu flicker
+                    // Combat metric add button
                     if !occultCombatMetricTemplates.isEmpty || !skillsWithoutInitiative.isEmpty {
-                        Button {
-                            showingOccultCombatSheet = true
+                        Menu {
+                            if !skillsWithoutInitiative.isEmpty {
+                                Button("New Initiative…") {
+                                    initiativeSubcategory = "Occult"
+                                    showingAddInitiative = true
+                                }
+                            }
+
+                            if !occultCombatMetricTemplates.isEmpty {
+                                if !skillsWithoutInitiative.isEmpty {
+                                    Divider()
+                                }
+                                ForEach(occultCombatMetricTemplates) { template in
+                                    Button(template.name) {
+                                        let metric = CharacterCombatMetric(template: template)
+                                        character.combatMetrics.append(metric)
+                                    }
+                                }
+                            }
                         } label: {
                             Image(systemName: "plus.circle.fill")
                                 .foregroundStyle(.blue)
                         }
+                        .menuStyle(.button)
                         .buttonStyle(.borderless)
                     }
                 }
@@ -639,34 +673,6 @@ struct CharacterDetailView: View {
             if let lib = library {
                 AddInitiativeView(character: character, library: lib, isPresented: $showingAddInitiative, subcategory: initiativeSubcategory)
             }
-        }
-        .sheet(isPresented: $showingPhysicalCombatSheet) {
-            CombatMetricSelectionSheet(
-                character: character,
-                isPresented: $showingPhysicalCombatSheet,
-                subcategory: "Physical",
-                templates: physicalCombatMetricTemplates,
-                hasInitiativeOption: !skillsWithoutInitiative.isEmpty,
-                onSelectInitiative: {
-                    initiativeSubcategory = "Physical"
-                    showingPhysicalCombatSheet = false
-                    showingAddInitiative = true
-                }
-            )
-        }
-        .sheet(isPresented: $showingOccultCombatSheet) {
-            CombatMetricSelectionSheet(
-                character: character,
-                isPresented: $showingOccultCombatSheet,
-                subcategory: "Occult",
-                templates: occultCombatMetricTemplates,
-                hasInitiativeOption: !skillsWithoutInitiative.isEmpty,
-                onSelectInitiative: {
-                    initiativeSubcategory = "Occult"
-                    showingOccultCombatSheet = false
-                    showingAddInitiative = true
-                }
-            )
         }
         .alert("New \(alertSkillTypeLabel)", isPresented: $showingQuickAddSkill) {
             TextField("Name", text: $quickAddSkillName)
@@ -1082,68 +1088,5 @@ struct CharacterDetailView: View {
 
         library.combatMetricTemplates.append(contentsOf: physicalMetrics)
         library.combatMetricTemplates.append(contentsOf: occultMetrics)
-    }
-}
-
-// MARK: - Combat Metric Selection Sheet
-
-struct CombatMetricSelectionSheet: View {
-    var character: RPGCharacter
-    @Binding var isPresented: Bool
-    let subcategory: String
-    let templates: [CombatMetricTemplate]
-    let hasInitiativeOption: Bool
-    let onSelectInitiative: () -> Void
-
-    var body: some View {
-        NavigationStack {
-            List {
-                if hasInitiativeOption {
-                    Section {
-                        Button {
-                            onSelectInitiative()
-                        } label: {
-                            HStack {
-                                Image(systemName: "plus.circle.fill")
-                                    .foregroundStyle(.blue)
-                                Text("New Initiative…")
-                                    .foregroundStyle(.primary)
-                            }
-                        }
-                    }
-                }
-
-                if !templates.isEmpty {
-                    Section(hasInitiativeOption ? "Combat Metrics" : "Add Combat Metric") {
-                        ForEach(templates) { template in
-                            Button {
-                                let metric = CharacterCombatMetric(template: template)
-                                character.combatMetrics.append(metric)
-                                isPresented = false
-                            } label: {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(template.name)
-                                        .foregroundStyle(.primary)
-                                    if !template.templateDescription.isEmpty {
-                                        Text(template.templateDescription)
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            .navigationTitle("Add to \(subcategory)")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        isPresented = false
-                    }
-                }
-            }
-        }
     }
 }
