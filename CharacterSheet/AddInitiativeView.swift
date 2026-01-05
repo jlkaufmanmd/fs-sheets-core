@@ -11,17 +11,39 @@ struct AddInitiativeView: View {
     @State private var description: String = ""
     @State private var userKeywords: String = ""
 
-    private var availableSkills: [String] {
-        let existingInitiativeSkills = Set(character.combatMetrics
+    private var existingInitiativeSkills: Set<String> {
+        Set(character.combatMetrics
             .compactMap { $0.template }
             .filter { $0.isInitiative }
             .map { $0.associatedSkillName })
+    }
 
-        var allSkills: [String] = []
-        allSkills.append(contentsOf: character.stats.filter { $0.statType == "skill" }.map { $0.name })
-        allSkills.append(contentsOf: character.learnedSkills.map { $0.effectiveName })
+    private var availableNaturalSkills: [String] {
+        character.stats
+            .filter { $0.statType == "skill" }
+            .map { $0.name }
+            .filter { !existingInitiativeSkills.contains($0) }
+            .sorted()
+    }
 
-        return allSkills.filter { !existingInitiativeSkills.contains($0) }.sorted()
+    private var availableLearnedSkills: [String] {
+        character.learnedSkills
+            .filter { $0.effectiveCategory == "Learned Skills" }
+            .map { $0.effectiveName }
+            .filter { !existingInitiativeSkills.contains($0) }
+            .sorted()
+    }
+
+    private var availableLores: [String] {
+        character.learnedSkills
+            .filter { $0.effectiveCategory == "Lores" }
+            .map { $0.effectiveName }
+            .filter { !existingInitiativeSkills.contains($0) }
+            .sorted()
+    }
+
+    private var hasAnySkills: Bool {
+        !availableNaturalSkills.isEmpty || !availableLearnedSkills.isEmpty || !availableLores.isEmpty
     }
 
     private var canAdd: Bool {
@@ -32,14 +54,35 @@ struct AddInitiativeView: View {
         NavigationStack {
             Form {
                 Section("New Initiative") {
-                    if availableSkills.isEmpty {
+                    if !hasAnySkills {
                         Text("No skills available for initiative")
                             .foregroundStyle(.secondary)
                     } else {
                         Picker("Associated Skill", selection: $selectedSkill) {
                             Text("Select a skill...").tag("")
-                            ForEach(availableSkills, id: \.self) { skill in
-                                Text(skill).tag(skill)
+
+                            if !availableNaturalSkills.isEmpty {
+                                Section(header: Text("Natural Skills")) {
+                                    ForEach(availableNaturalSkills, id: \.self) { skill in
+                                        Text(skill).tag(skill)
+                                    }
+                                }
+                            }
+
+                            if !availableLearnedSkills.isEmpty {
+                                Section(header: Text("Learned Skills")) {
+                                    ForEach(availableLearnedSkills, id: \.self) { skill in
+                                        Text(skill).tag(skill)
+                                    }
+                                }
+                            }
+
+                            if !availableLores.isEmpty {
+                                Section(header: Text("Lore Skills")) {
+                                    ForEach(availableLores, id: \.self) { skill in
+                                        Text(skill).tag(skill)
+                                    }
+                                }
                             }
                         }
                     }

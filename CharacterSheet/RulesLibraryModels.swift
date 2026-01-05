@@ -309,7 +309,8 @@ final class CombatMetricTemplate: KeywordProvider {
     }
 
     var implicitKeywords: [String] {
-        var base = [name, "stat", "combat profile", subcategory.lowercased()]
+        let combatProfileType = subcategory.lowercased() + " combat profile"
+        var base = [name, "stat", "calculated stat", combatProfileType]
 
         // Add additional keywords
         let additional = additionalKeywords
@@ -375,8 +376,8 @@ final class CharacterCombatMetric: KeywordProvider {
     private func calculateWyrd() -> Int {
         guard let character else { return 1 }
 
-        let psi = character.learnedSkills.first { $0.effectiveName.lowercased() == "psi" }?.value ?? 0
-        let theurgy = character.learnedSkills.first { $0.effectiveName.lowercased() == "theurgy" }?.value ?? 0
+        let psi = character.stats.first { $0.name == "Psi" }?.value ?? 0
+        let theurgy = character.stats.first { $0.name == "Theurgy" }?.value ?? 0
         let introvert = character.stats.first { $0.name == "Introvert" }?.value ?? 0
         let faith = character.stats.first { $0.name == "Faith" }?.value ?? 0
 
@@ -388,6 +389,51 @@ final class CharacterCombatMetric: KeywordProvider {
             return max(introvert, faith)
         } else {
             return 1
+        }
+    }
+
+    // Breakdown showing how the value was calculated
+    var calculationBreakdown: [(String, Int)] {
+        guard let template, let character else { return [] }
+
+        switch template.baseValueFormula {
+        case "5 + Endurance":
+            let endurance = character.stats.first { $0.name == "Endurance" }?.value ?? 0
+            return [("vital", 5), ("Endurance", endurance)]
+
+        case "Strength / 3":
+            let strength = character.stats.first { $0.name == "Strength" }?.value ?? 0
+            return [("Strength / 3 (rounded down)", strength / 3)]
+
+        case "Wyrd":
+            let psi = character.stats.first { $0.name == "Psi" }?.value ?? 0
+            let theurgy = character.stats.first { $0.name == "Theurgy" }?.value ?? 0
+            let introvert = character.stats.first { $0.name == "Introvert" }?.value ?? 0
+            let faith = character.stats.first { $0.name == "Faith" }?.value ?? 0
+
+            if psi > 0 && theurgy == 0 {
+                return [("Introvert", introvert)]
+            } else if psi == 0 && theurgy > 0 {
+                return [("Faith", faith)]
+            } else if psi > 0 && theurgy > 0 {
+                let maxValue = max(introvert, faith)
+                if introvert > faith {
+                    return [("max(Introvert, Faith)", maxValue)]
+                } else if faith > introvert {
+                    return [("max(Introvert, Faith)", maxValue)]
+                } else {
+                    return [("Introvert or Faith", maxValue)]
+                }
+            } else {
+                return [("default", 1)]
+            }
+
+        default:
+            // Static value or unknown formula
+            if let staticValue = Int(template.baseValueFormula) {
+                return [(template.baseValueFormula, staticValue)]
+            }
+            return []
         }
     }
 

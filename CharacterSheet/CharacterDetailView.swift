@@ -465,7 +465,7 @@ struct CharacterDetailView: View {
                 }
             } header: {
                 HStack {
-                    Text("Physical")
+                    Text("Physical Combat Profile")
                         .font(.subheadline)
                         .fontWeight(.semibold)
                         .foregroundStyle(.primary)
@@ -528,7 +528,7 @@ struct CharacterDetailView: View {
                 }
             } header: {
                 HStack {
-                    Text("Occult")
+                    Text("Occult Combat Profile")
                         .font(.subheadline)
                         .fontWeight(.semibold)
                         .foregroundStyle(.primary)
@@ -881,11 +881,27 @@ struct CharacterDetailView: View {
                     }
                 }
 
-                HStack {
-                    Text("Base Value")
-                    Spacer()
-                    Text("\(metric.calculatedBaseValue)")
-                        .fontWeight(.medium)
+                // Show calculation breakdown
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text("Base Value")
+                        Spacer()
+                        Text("\(metric.calculatedBaseValue)")
+                            .fontWeight(.bold)
+                    }
+
+                    // Show breakdown
+                    ForEach(Array(metric.calculationBreakdown.enumerated()), id: \.offset) { _, component in
+                        HStack {
+                            Text("  \(component.0)")
+                                .font(.callout)
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            Text("\(component.1)")
+                                .font(.callout)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                 }
 
                 Divider()
