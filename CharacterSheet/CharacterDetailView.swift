@@ -14,6 +14,8 @@ struct CharacterDetailView: View {
     @State private var selectedSkillCategory: String = "Learned Skills"
     @State private var showingQuickAddSkill = false
     @State private var quickAddSkillName: String = ""
+    @State private var showingAddInitiative = false
+    @State private var initiativeSubcategory: String = "Physical"
 
     // Inline value editing focus (tap number to type)
     @FocusState private var focusedStatID: PersistentIdentifier?
@@ -474,7 +476,8 @@ struct CharacterDetailView: View {
                         Menu {
                             if !skillsWithoutInitiative.isEmpty {
                                 Button("New Initiative…") {
-                                    // TODO: Show initiative creation sheet
+                                    initiativeSubcategory = "Physical"
+                                    showingAddInitiative = true
                                 }
                             }
 
@@ -536,7 +539,8 @@ struct CharacterDetailView: View {
                         Menu {
                             if !skillsWithoutInitiative.isEmpty {
                                 Button("New Initiative…") {
-                                    // TODO: Show initiative creation sheet
+                                    initiativeSubcategory = "Occult"
+                                    showingAddInitiative = true
                                 }
                             }
 
@@ -655,6 +659,11 @@ struct CharacterDetailView: View {
         .sheet(isPresented: $showingAddRollNew) {
             if let lib = library {
                 AddGoalRollView(character: character, library: lib, isPresented: $showingAddRollNew, mode: .new)
+            }
+        }
+        .sheet(isPresented: $showingAddInitiative) {
+            if let lib = library {
+                AddInitiativeView(character: character, library: lib, isPresented: $showingAddInitiative, subcategory: initiativeSubcategory)
             }
         }
         .alert("New \(alertSkillTypeLabel)", isPresented: $showingQuickAddSkill) {
