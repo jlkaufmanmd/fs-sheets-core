@@ -67,10 +67,9 @@ final class Stat: KeywordProvider {
     /// Using "implicit" so we can reserve "effective" later for modified values.
     var implicitKeywords: [String] {
         let typeKey = KeywordUtil.normalize(statType)
-        let catKey  = KeywordUtil.normalize(category)
+        let catKey  = KeywordUtil.categoryToKeyword(category)
         let nameKey = KeywordUtil.normalize(name)
 
-        // Keep full category names as single keywords, don't break down multi-word strings
         var keys: [String] = [
             nameKey,
             "stat",
@@ -78,7 +77,7 @@ final class Stat: KeywordProvider {
             catKey
         ]
 
-        return Array(Set(keys.map(KeywordUtil.normalize))).sorted()
+        return Array(Set(keys)).sorted()
     }
 
     var keywordsForRules: [String] { implicitKeywords }

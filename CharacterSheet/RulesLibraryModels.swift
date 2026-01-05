@@ -45,7 +45,7 @@ final class SkillTemplate: KeywordProvider {
 
     var implicitKeywords: [String] {
         KeywordUtil.make(
-            base: [name, "skill", "stat", category],
+            base: [name, "skill", "stat", KeywordUtil.categoryToKeyword(category)],
             user: userKeywords
         )
     }
@@ -88,7 +88,7 @@ final class CharacterSkill: KeywordProvider {
 
     var keywordsForRules: [String] {
         KeywordUtil.make(
-            base: [effectiveName, "skill", "stat", effectiveCategory],
+            base: [effectiveName, "skill", "stat", KeywordUtil.categoryToKeyword(effectiveCategory)],
             user: effectiveUserKeywords
         )
     }
