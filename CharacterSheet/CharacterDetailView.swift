@@ -502,6 +502,7 @@ struct CharacterDetailView: View {
                 .cornerRadius(6)
                 .textCase(nil)
             }
+            .id("physical-combat-profile")
 
             // Combat Metrics - Occult
             Section {

@@ -42,6 +42,22 @@ struct AddInitiativeView: View {
             .sorted()
     }
 
+    private var allAvailableSkills: [(category: String, skills: [String])] {
+        var result: [(String, [String])] = []
+
+        if !availableNaturalSkills.isEmpty {
+            result.append(("Natural Skills", availableNaturalSkills))
+        }
+        if !availableLearnedSkills.isEmpty {
+            result.append(("Learned Skills", availableLearnedSkills))
+        }
+        if !availableLores.isEmpty {
+            result.append(("Lore Skills", availableLores))
+        }
+
+        return result
+    }
+
     private var hasAnySkills: Bool {
         !availableNaturalSkills.isEmpty || !availableLearnedSkills.isEmpty || !availableLores.isEmpty
     }
@@ -58,30 +74,21 @@ struct AddInitiativeView: View {
                         Text("No skills available for initiative")
                             .foregroundStyle(.secondary)
                     } else {
-                        Picker("Associated Skill", selection: $selectedSkill) {
-                            Text("Select a skill...").tag("")
-
-                            if !availableNaturalSkills.isEmpty {
-                                Section(header: Text("Natural Skills")) {
-                                    ForEach(availableNaturalSkills, id: \.self) { skill in
-                                        Text(skill).tag(skill)
-                                    }
-                                }
-                            }
-
-                            if !availableLearnedSkills.isEmpty {
-                                Section(header: Text("Learned Skills")) {
-                                    ForEach(availableLearnedSkills, id: \.self) { skill in
-                                        Text(skill).tag(skill)
-                                    }
-                                }
-                            }
-
-                            if !availableLores.isEmpty {
-                                Section(header: Text("Lore Skills")) {
-                                    ForEach(availableLores, id: \.self) { skill in
-                                        Text(skill).tag(skill)
-                                    }
+                        NavigationLink {
+                            SkillSelectionView(
+                                selectedSkill: $selectedSkill,
+                                skillsByCategory: allAvailableSkills
+                            )
+                        } label: {
+                            HStack {
+                                Text("Associated Skill")
+                                Spacer()
+                                if selectedSkill.isEmpty {
+                                    Text("Select...")
+                                        .foregroundStyle(.secondary)
+                                } else {
+                                    Text(selectedSkill)
+                                        .foregroundStyle(.secondary)
                                 }
                             }
                         }
@@ -168,5 +175,40 @@ struct AddInitiativeView: View {
         character.combatMetrics.append(metric)
 
         isPresented = false
+    }
+}
+
+// MARK: - Skill Selection View
+
+struct SkillSelectionView: View {
+    @Environment(\.dismiss) private var dismiss
+    @Binding var selectedSkill: String
+    let skillsByCategory: [(category: String, skills: [String])]
+
+    var body: some View {
+        Form {
+            ForEach(skillsByCategory, id: \.category) { categoryGroup in
+                Section(categoryGroup.category) {
+                    ForEach(categoryGroup.skills, id: \.self) { skill in
+                        Button {
+                            selectedSkill = skill
+                            dismiss()
+                        } label: {
+                            HStack {
+                                Text(skill)
+                                    .foregroundStyle(.primary)
+                                Spacer()
+                                if selectedSkill == skill {
+                                    Image(systemName: "checkmark")
+                                        .foregroundStyle(.blue)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        .navigationTitle("Select Skill")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
