@@ -12,10 +12,14 @@ final class RulesLibrary {
     @Relationship(deleteRule: .cascade, inverse: \SkillTemplate.library)
     var skillTemplates: [SkillTemplate]
 
+    @Relationship(deleteRule: .cascade, inverse: \CombatMetricTemplate.library)
+    var combatMetricTemplates: [CombatMetricTemplate]
+
     init() {
         self.createdDate = Date()
         self.goalRollTemplates = []
         self.skillTemplates = []
+        self.combatMetricTemplates = []
     }
 }
 
@@ -269,5 +273,125 @@ final class CharacterGoalRoll: KeywordProvider {
         if let s = skillName { base.append(s) }
 
         return KeywordUtil.make(base: base, user: effectiveUserKeywords)
+    }
+}
+
+// MARK: - Combat Metric Templates
+
+@Model
+final class CombatMetricTemplate: KeywordProvider {
+    @Attribute(.unique) var name: String
+    var subcategory: String // "Physical" or "Occult"
+    var templateDescription: String
+    var additionalKeywords: String // Explicitly defined keywords (not user-editable)
+    var baseValueFormula: String // Formula or static value as string
+    var isInitiative: Bool
+    var associatedSkillName: String // For initiatives only
+
+    var library: RulesLibrary?
+
+    init(
+        name: String,
+        subcategory: String,
+        templateDescription: String = "",
+        additionalKeywords: String = "",
+        baseValueFormula: String = "0",
+        isInitiative: Bool = false,
+        associatedSkillName: String = ""
+    ) {
+        self.name = name
+        self.subcategory = subcategory
+        self.templateDescription = templateDescription
+        self.additionalKeywords = additionalKeywords
+        self.baseValueFormula = baseValueFormula
+        self.isInitiative = isInitiative
+        self.associatedSkillName = associatedSkillName
+    }
+
+    var implicitKeywords: [String] {
+        var base = [name, "stat", "combat profile", subcategory.lowercased()]
+
+        // Add additional keywords
+        let additional = additionalKeywords
+            .split(separator: ",")
+            .map { String($0).trimmingCharacters(in: .whitespacesAndNewlines).lowercased() }
+            .filter { !$0.isEmpty }
+        base.append(contentsOf: additional)
+
+        return Array(Set(base.map(KeywordUtil.normalize))).sorted()
+    }
+
+    var keywordsForRules: [String] { implicitKeywords }
+}
+
+@Model
+final class CharacterCombatMetric: KeywordProvider {
+    var value: Int
+
+    var template: CombatMetricTemplate?
+    var character: RPGCharacter?
+
+    init(template: CombatMetricTemplate, value: Int = 0) {
+        self.template = template
+        self.value = value
+    }
+
+    var effectiveName: String { template?.name ?? "" }
+    var effectiveDescription: String { template?.templateDescription ?? "" }
+    var effectiveSubcategory: String { template?.subcategory ?? "" }
+
+    // Calculate base value from formula
+    var calculatedBaseValue: Int {
+        guard let template, let character else { return 0 }
+        return evaluateFormula(template.baseValueFormula)
+    }
+
+    private func evaluateFormula(_ formula: String) -> Int {
+        guard let character else { return 0 }
+
+        // Handle static values
+        if let staticValue = Int(formula) {
+            return staticValue
+        }
+
+        // Handle special formulas
+        switch formula {
+        case "5 + Endurance":
+            let endurance = character.stats.first { $0.name == "Endurance" }
+            return 5 + (endurance?.value ?? 0)
+
+        case "Strength / 3":
+            let strength = character.stats.first { $0.name == "Strength" }
+            return (strength?.value ?? 0) / 3
+
+        case "Wyrd":
+            return calculateWyrd()
+
+        default:
+            return 0
+        }
+    }
+
+    private func calculateWyrd() -> Int {
+        guard let character else { return 1 }
+
+        let psi = character.learnedSkills.first { $0.effectiveName.lowercased() == "psi" }?.value ?? 0
+        let theurgy = character.learnedSkills.first { $0.effectiveName.lowercased() == "theurgy" }?.value ?? 0
+        let introvert = character.stats.first { $0.name == "Introvert" }?.value ?? 0
+        let faith = character.stats.first { $0.name == "Faith" }?.value ?? 0
+
+        if psi > 0 && theurgy == 0 {
+            return introvert
+        } else if psi == 0 && theurgy > 0 {
+            return faith
+        } else if psi > 0 && theurgy > 0 {
+            return max(introvert, faith)
+        } else {
+            return 1
+        }
+    }
+
+    var keywordsForRules: [String] {
+        template?.implicitKeywords ?? []
     }
 }

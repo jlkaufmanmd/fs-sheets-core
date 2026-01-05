@@ -15,12 +15,16 @@ final class RPGCharacter {
     @Relationship(deleteRule: .cascade, inverse: \CharacterGoalRoll.character)
     var goalRolls: [CharacterGoalRoll]
 
+    @Relationship(deleteRule: .cascade, inverse: \CharacterCombatMetric.character)
+    var combatMetrics: [CharacterCombatMetric]
+
     init(name: String, characterDescription: String = "") {
         self.name = name
         self.characterDescription = characterDescription
         self.stats = []
         self.learnedSkills = []
         self.goalRolls = []
+        self.combatMetrics = []
     }
 }
 

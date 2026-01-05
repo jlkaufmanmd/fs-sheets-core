@@ -66,6 +66,18 @@ struct CharacterDetailView: View {
         character.goalRolls.sorted { $0.effectiveName.localizedCaseInsensitiveCompare($1.effectiveName) == .orderedAscending }
     }
 
+    private var physicalCombatMetrics: [CharacterCombatMetric] {
+        character.combatMetrics
+            .filter { $0.effectiveSubcategory == "Physical" }
+            .sorted { $0.effectiveName.localizedCaseInsensitiveCompare($1.effectiveName) == .orderedAscending }
+    }
+
+    private var occultCombatMetrics: [CharacterCombatMetric] {
+        character.combatMetrics
+            .filter { $0.effectiveSubcategory == "Occult" }
+            .sorted { $0.effectiveName.localizedCaseInsensitiveCompare($1.effectiveName) == .orderedAscending }
+    }
+
     // Filter templates to exclude ones character already has
     private var availableSkillTemplates: [SkillTemplate] {
         guard let library else { return [] }
@@ -77,6 +89,34 @@ struct CharacterDetailView: View {
         guard let library else { return [] }
         let existingTemplateIDs = Set(character.goalRolls.compactMap { $0.template?.persistentModelID })
         return library.goalRollTemplates.filter { !existingTemplateIDs.contains($0.persistentModelID) }
+    }
+
+    private var availableCombatMetricTemplates: [CombatMetricTemplate] {
+        guard let library else { return [] }
+        let existingTemplateIDs = Set(character.combatMetrics.compactMap { $0.template?.persistentModelID })
+        return library.combatMetricTemplates.filter { !existingTemplateIDs.contains($0.persistentModelID) && !$0.isInitiative }
+    }
+
+    private var physicalCombatMetricTemplates: [CombatMetricTemplate] {
+        availableCombatMetricTemplates.filter { $0.subcategory == "Physical" }
+    }
+
+    private var occultCombatMetricTemplates: [CombatMetricTemplate] {
+        availableCombatMetricTemplates.filter { $0.subcategory == "Occult" }
+    }
+
+    // Skills available for initiative creation (no existing initiative)
+    private var skillsWithoutInitiative: [String] {
+        let existingInitiativeSkills = Set(character.combatMetrics
+            .compactMap { $0.template }
+            .filter { $0.isInitiative }
+            .map { $0.associatedSkillName })
+
+        var allSkills: [String] = []
+        allSkills.append(contentsOf: character.stats.filter { $0.statType == "skill" }.map { $0.name })
+        allSkills.append(contentsOf: character.learnedSkills.map { $0.effectiveName })
+
+        return allSkills.filter { !existingInitiativeSkills.contains($0) }.sorted()
     }
 
     // Category-specific template filters
@@ -390,12 +430,136 @@ struct CharacterDetailView: View {
             }
 
             Section {
-                Text("GOAL ROLLS")
+                Text("CALCULATED STATS")
                     .font(.headline)
                     .fontWeight(.bold)
                     .frame(maxWidth: .infinity, alignment: .center)
                     .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
                     .listRowBackground(Color(.systemGray6))
+            }
+
+            // Combat Metrics - Physical
+            Section {
+                if physicalCombatMetrics.isEmpty {
+                    Text("No physical combat metrics yet.")
+                        .foregroundStyle(.secondary)
+                        .font(.callout)
+                } else {
+                    ForEach(physicalCombatMetrics) { metric in
+                        combatMetricDisclosureRow(metric)
+                            .contextMenu {
+                                Button(role: .destructive) {
+                                    modelContext.delete(metric)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
+                    }
+                    .onDelete { offsets in
+                        offsets.forEach { index in
+                            modelContext.delete(physicalCombatMetrics[index])
+                        }
+                    }
+                }
+            } header: {
+                HStack {
+                    Text("Physical")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.primary)
+                    Spacer()
+
+                    // Combat metric add button
+                    if !physicalCombatMetricTemplates.isEmpty || !skillsWithoutInitiative.isEmpty {
+                        Menu {
+                            if !skillsWithoutInitiative.isEmpty {
+                                Button("New Initiative…") {
+                                    // TODO: Show initiative creation sheet
+                                }
+                            }
+
+                            if !physicalCombatMetricTemplates.isEmpty {
+                                Divider()
+                                ForEach(physicalCombatMetricTemplates) { template in
+                                    Button(template.name) {
+                                        let metric = CharacterCombatMetric(template: template)
+                                        character.combatMetrics.append(metric)
+                                    }
+                                }
+                            }
+                        } label: {
+                            Image(systemName: "plus.circle.fill")
+                                .foregroundStyle(.blue)
+                        }
+                    }
+                }
+                .padding(.vertical, 4)
+                .padding(.horizontal, 8)
+                .background(Color(.systemGray5))
+                .cornerRadius(6)
+                .textCase(nil)
+            }
+
+            // Combat Metrics - Occult
+            Section {
+                if occultCombatMetrics.isEmpty {
+                    Text("No occult combat metrics yet.")
+                        .foregroundStyle(.secondary)
+                        .font(.callout)
+                } else {
+                    ForEach(occultCombatMetrics) { metric in
+                        combatMetricDisclosureRow(metric)
+                            .contextMenu {
+                                Button(role: .destructive) {
+                                    modelContext.delete(metric)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
+                    }
+                    .onDelete { offsets in
+                        offsets.forEach { index in
+                            modelContext.delete(occultCombatMetrics[index])
+                        }
+                    }
+                }
+            } header: {
+                HStack {
+                    Text("Occult")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.primary)
+                    Spacer()
+
+                    // Combat metric add button
+                    if !occultCombatMetricTemplates.isEmpty || !skillsWithoutInitiative.isEmpty {
+                        Menu {
+                            if !skillsWithoutInitiative.isEmpty {
+                                Button("New Initiative…") {
+                                    // TODO: Show initiative creation sheet
+                                }
+                            }
+
+                            if !occultCombatMetricTemplates.isEmpty {
+                                Divider()
+                                ForEach(occultCombatMetricTemplates) { template in
+                                    Button(template.name) {
+                                        let metric = CharacterCombatMetric(template: template)
+                                        character.combatMetrics.append(metric)
+                                    }
+                                }
+                            }
+                        } label: {
+                            Image(systemName: "plus.circle.fill")
+                                .foregroundStyle(.blue)
+                        }
+                    }
+                }
+                .padding(.vertical, 4)
+                .padding(.horizontal, 8)
+                .background(Color(.systemGray5))
+                .cornerRadius(6)
+                .textCase(nil)
             }
 
             Section {
@@ -693,6 +857,50 @@ struct CharacterDetailView: View {
         }
     }
 
+    @ViewBuilder
+    private func combatMetricDisclosureRow(_ metric: CharacterCombatMetric) -> some View {
+        DisclosureGroup {
+            VStack(alignment: .leading, spacing: 8) {
+                if !metric.effectiveDescription.isEmpty {
+                    HStack {
+                        Text("Description")
+                        Spacer()
+                        Text(metric.effectiveDescription)
+                            .fontWeight(.medium)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.trailing)
+                    }
+                }
+
+                HStack {
+                    Text("Base Value")
+                    Spacer()
+                    Text("\(metric.calculatedBaseValue)")
+                        .fontWeight(.medium)
+                }
+
+                Divider()
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Keywords")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Text(metric.keywordsForRules.joined(separator: ", "))
+                        .font(.caption)
+                }
+            }
+            .padding(.vertical, 4)
+        } label: {
+            HStack {
+                Text(metric.effectiveName)
+                Spacer()
+                Text("\(metric.calculatedBaseValue)")
+                    .font(.headline)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
     // MARK: - Validation & Actions
 
     private func validateName() {
@@ -747,5 +955,105 @@ struct CharacterDetailView: View {
             let lib = RulesLibrary()
             modelContext.insert(lib)
         }
+        // Bootstrap combat metrics if needed
+        if let lib = library, lib.combatMetricTemplates.isEmpty {
+            bootstrapCombatMetrics(lib)
+        }
+    }
+
+    private func bootstrapCombatMetrics(_ library: RulesLibrary) {
+        // Physical Combat Metrics
+        let physicalMetrics: [CombatMetricTemplate] = [
+            CombatMetricTemplate(
+                name: "Actions (physical)",
+                subcategory: "Physical",
+                additionalKeywords: "physical actions",
+                baseValueFormula: "3"
+            ),
+            CombatMetricTemplate(
+                name: "Hit Points",
+                subcategory: "Physical",
+                baseValueFormula: "5 + Endurance"
+            ),
+            CombatMetricTemplate(
+                name: "Recovery",
+                subcategory: "Physical",
+                templateDescription: "available in-combat healing",
+                baseValueFormula: "0"
+            ),
+            CombatMetricTemplate(
+                name: "Armor",
+                subcategory: "Physical",
+                baseValueFormula: "0"
+            ),
+            CombatMetricTemplate(
+                name: "Damage",
+                subcategory: "Physical",
+                baseValueFormula: "Strength / 3"
+            ),
+            CombatMetricTemplate(
+                name: "Guard",
+                subcategory: "Physical",
+                templateDescription: "penalty to be hit",
+                baseValueFormula: "0"
+            ),
+            CombatMetricTemplate(
+                name: "Pressure",
+                subcategory: "Physical",
+                templateDescription: "penalty to be parried",
+                baseValueFormula: "0"
+            )
+        ]
+
+        // Occult Combat Metrics
+        let occultMetrics: [CombatMetricTemplate] = [
+            CombatMetricTemplate(
+                name: "Actions (mental)",
+                subcategory: "Occult",
+                additionalKeywords: "mental actions",
+                baseValueFormula: "1"
+            ),
+            CombatMetricTemplate(
+                name: "Wyrd",
+                subcategory: "Occult",
+                baseValueFormula: "Wyrd"
+            ),
+            CombatMetricTemplate(
+                name: "Psi Bonus",
+                subcategory: "Occult",
+                baseValueFormula: "0"
+            ),
+            CombatMetricTemplate(
+                name: "Theurgy Bonus",
+                subcategory: "Occult",
+                baseValueFormula: "0"
+            ),
+            CombatMetricTemplate(
+                name: "Occult Bonus",
+                subcategory: "Occult",
+                baseValueFormula: "0"
+            ),
+            CombatMetricTemplate(
+                name: "Occult Power",
+                subcategory: "Occult",
+                templateDescription: "penalty to be resisted (all occult)",
+                baseValueFormula: "0"
+            ),
+            CombatMetricTemplate(
+                name: "Theurgy Power",
+                subcategory: "Occult",
+                templateDescription: "penalty to be resisted (theurgy only)",
+                baseValueFormula: "2"
+            ),
+            CombatMetricTemplate(
+                name: "Psi Power",
+                subcategory: "Occult",
+                templateDescription: "penalty to be resisted (psi only)",
+                baseValueFormula: "0"
+            )
+        ]
+
+        library.combatMetricTemplates.append(contentsOf: physicalMetrics)
+        library.combatMetricTemplates.append(contentsOf: occultMetrics)
     }
 }
