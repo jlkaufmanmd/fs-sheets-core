@@ -92,6 +92,16 @@ struct CharacterDetailView: View {
         availableSkillTemplates.filter { $0.category == "Tongues" }
     }
 
+    // Display name for quick-add alert
+    private var alertSkillTypeLabel: String {
+        switch selectedSkillCategory {
+        case "Learned Skills": return "Learned Skill"
+        case "Lores": return "Lore Skill"
+        case "Tongues": return "Tongue"
+        default: return "Skill"
+        }
+    }
+
     var body: some View {
         Form {
             Section("Character") {
@@ -120,39 +130,92 @@ struct CharacterDetailView: View {
                 }
             }
 
-            Section("Attributes") {
-                ForEach(attributesByCategory, id: \.0) { (category, stats) in
-                    Section {
-                        ForEach(stats) { stat in
-                            statDisclosureRow(stat)
-                        }
-                    } header: {
-                        HStack {
-                            Text(category)
-                                .font(.subheadline)
-                                .fontWeight(.semibold)
-                                .foregroundStyle(.primary)
-                            Spacer()
-                        }
-                        .padding(.vertical, 4)
-                        .padding(.horizontal, 8)
-                        .background(Color(.systemGray5))
-                        .cornerRadius(6)
-                        .textCase(nil)
-                    }
-                }
+            Section {
+                Text("ATTRIBUTES")
+                    .font(.headline)
+                    .fontWeight(.bold)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
+                    .listRowBackground(Color(.systemGray6))
             }
 
-            Section("Natural Skills") {
-                ForEach(naturalSkills) { stat in
-                    statDisclosureRow(stat)
+            ForEach(attributesByCategory, id: \.0) { (category, stats) in
+                Section {
+                    ForEach(stats) { stat in
+                        statDisclosureRow(stat)
+                    }
+                } header: {
+                    HStack {
+                        Text(category)
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.primary)
+                        Spacer()
+                    }
+                    .padding(.vertical, 4)
+                    .padding(.horizontal, 8)
+                    .background(Color(.systemGray5))
+                    .cornerRadius(6)
+                    .textCase(nil)
                 }
             }
 
             Section {
+                Text("SKILLS")
+                    .font(.headline)
+                    .fontWeight(.bold)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
+                    .listRowBackground(Color(.systemGray6))
+            }
+
+            Section {
+                ForEach(naturalSkills) { stat in
+                    statDisclosureRow(stat)
+                }
+            } header: {
+                HStack {
+                    Text("Natural Skills")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.primary)
+                    Spacer()
+                }
+                .padding(.vertical, 4)
+                .padding(.horizontal, 8)
+                .background(Color(.systemGray5))
+                .cornerRadius(6)
+                .textCase(nil)
+            }
+
+            Section {
+                if learnedSkills.isEmpty {
+                    Text("No learned skills yet.")
+                        .foregroundStyle(.secondary)
+                        .font(.callout)
+                } else {
+                    ForEach(learnedSkills) { skill in
+                        skillDisclosureRow(skill)
+                            .contextMenu {
+                                Button(role: .destructive) {
+                                    modelContext.delete(skill)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
+                    }
+                    .onDelete { offsets in
+                        offsets.forEach { index in
+                            modelContext.delete(learnedSkills[index])
+                        }
+                    }
+                }
+            } header: {
                 HStack {
                     Text("Learned Skills")
-                        .font(.headline)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.primary)
                     Spacer()
 
                     // Category-aware add button
@@ -185,13 +248,20 @@ struct CharacterDetailView: View {
                         }
                     }
                 }
+                .padding(.vertical, 4)
+                .padding(.horizontal, 8)
+                .background(Color(.systemGray5))
+                .cornerRadius(6)
+                .textCase(nil)
+            }
 
-                if learnedSkills.isEmpty {
-                    Text("No learned skills yet.")
+            Section {
+                if lores.isEmpty {
+                    Text("No lore skills yet.")
                         .foregroundStyle(.secondary)
                         .font(.callout)
                 } else {
-                    ForEach(learnedSkills) { skill in
+                    ForEach(lores) { skill in
                         skillDisclosureRow(skill)
                             .contextMenu {
                                 Button(role: .destructive) {
@@ -203,16 +273,16 @@ struct CharacterDetailView: View {
                     }
                     .onDelete { offsets in
                         offsets.forEach { index in
-                            modelContext.delete(learnedSkills[index])
+                            modelContext.delete(lores[index])
                         }
                     }
                 }
-            }
-
-            Section {
+            } header: {
                 HStack {
-                    Text("Lores")
-                        .font(.headline)
+                    Text("Lore Skills")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.primary)
                     Spacer()
 
                     // Category-aware add button
@@ -245,13 +315,20 @@ struct CharacterDetailView: View {
                         }
                     }
                 }
+                .padding(.vertical, 4)
+                .padding(.horizontal, 8)
+                .background(Color(.systemGray5))
+                .cornerRadius(6)
+                .textCase(nil)
+            }
 
-                if lores.isEmpty {
-                    Text("No lores yet.")
+            Section {
+                if tongues.isEmpty {
+                    Text("No tongues yet.")
                         .foregroundStyle(.secondary)
                         .font(.callout)
                 } else {
-                    ForEach(lores) { skill in
+                    ForEach(tongues) { skill in
                         skillDisclosureRow(skill)
                             .contextMenu {
                                 Button(role: .destructive) {
@@ -263,16 +340,16 @@ struct CharacterDetailView: View {
                     }
                     .onDelete { offsets in
                         offsets.forEach { index in
-                            modelContext.delete(lores[index])
+                            modelContext.delete(tongues[index])
                         }
                     }
                 }
-            }
-
-            Section {
+            } header: {
                 HStack {
                     Text("Tongues")
-                        .font(.headline)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.primary)
                     Spacer()
 
                     // Category-aware add button
@@ -305,17 +382,33 @@ struct CharacterDetailView: View {
                         }
                     }
                 }
+                .padding(.vertical, 4)
+                .padding(.horizontal, 8)
+                .background(Color(.systemGray5))
+                .cornerRadius(6)
+                .textCase(nil)
+            }
 
-                if tongues.isEmpty {
-                    Text("No tongues yet.")
+            Section {
+                Text("GOAL ROLLS")
+                    .font(.headline)
+                    .fontWeight(.bold)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
+                    .listRowBackground(Color(.systemGray6))
+            }
+
+            Section {
+                if goalRolls.isEmpty {
+                    Text("No goal rolls yet.")
                         .foregroundStyle(.secondary)
                         .font(.callout)
                 } else {
-                    ForEach(tongues) { skill in
-                        skillDisclosureRow(skill)
+                    ForEach(goalRolls) { roll in
+                        goalRollDisclosureRow(roll)
                             .contextMenu {
                                 Button(role: .destructive) {
-                                    modelContext.delete(skill)
+                                    modelContext.delete(roll)
                                 } label: {
                                     Label("Delete", systemImage: "trash")
                                 }
@@ -323,16 +416,16 @@ struct CharacterDetailView: View {
                     }
                     .onDelete { offsets in
                         offsets.forEach { index in
-                            modelContext.delete(tongues[index])
+                            modelContext.delete(goalRolls[index])
                         }
                     }
                 }
-            }
-
-            Section {
+            } header: {
                 HStack {
                     Text("Goal Rolls")
-                        .font(.headline)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.primary)
                     Spacer()
 
                     // Show button if no available templates, menu if templates exist
@@ -374,28 +467,11 @@ struct CharacterDetailView: View {
                         }
                     }
                 }
-
-                if goalRolls.isEmpty {
-                    Text("No goal rolls yet.")
-                        .foregroundStyle(.secondary)
-                        .font(.callout)
-                } else {
-                    ForEach(goalRolls) { roll in
-                        goalRollDisclosureRow(roll)
-                            .contextMenu {
-                                Button(role: .destructive) {
-                                    modelContext.delete(roll)
-                                } label: {
-                                    Label("Delete", systemImage: "trash")
-                                }
-                            }
-                    }
-                    .onDelete { offsets in
-                        offsets.forEach { index in
-                            modelContext.delete(goalRolls[index])
-                        }
-                    }
-                }
+                .padding(.vertical, 4)
+                .padding(.horizontal, 8)
+                .background(Color(.systemGray5))
+                .cornerRadius(6)
+                .textCase(nil)
             }
         }
         .scrollDismissesKeyboard(.never)
@@ -417,7 +493,7 @@ struct CharacterDetailView: View {
                 AddGoalRollView(character: character, library: lib, isPresented: $showingAddRollNew, mode: .new)
             }
         }
-        .alert("New \(selectedSkillCategory.dropLast(selectedSkillCategory == "Learned Skills" || selectedSkillCategory == "Natural Skills" ? 1 : 0))", isPresented: $showingQuickAddSkill) {
+        .alert("New \(alertSkillTypeLabel)", isPresented: $showingQuickAddSkill) {
             TextField("Name", text: $quickAddSkillName)
                 .textInputAutocapitalization(.words)
             Button("Cancel", role: .cancel) {
@@ -427,7 +503,7 @@ struct CharacterDetailView: View {
                 addQuickSkill()
             }
         } message: {
-            Text("Enter a name for the new skill")
+            Text("Enter a name for the new \(alertSkillTypeLabel.lowercased())")
         }
     }
 
