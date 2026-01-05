@@ -67,7 +67,7 @@ struct GoalRollEditView: View {
                     Picker("Attribute", selection: $roll.attributeStat) {
                         Text("Select...").tag(nil as Stat?)
                         ForEach(attributesOrdered) { a in
-                            Text("\(a.category): \(a.name)").tag(a as Stat?)
+                            Text(a.name).tag(a as Stat?)
                         }
                     }
                     
@@ -99,7 +99,7 @@ struct GoalRollEditView: View {
                             Text("Attribute")
                             Spacer()
                             if let a = roll.effectiveAttributeStat {
-                                Text("\(a.category): \(a.name)")
+                                Text(a.name)
                                     .foregroundStyle(.secondary)
                             } else {
                                 Text("Missing").foregroundStyle(.secondary)

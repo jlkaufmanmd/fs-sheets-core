@@ -70,20 +70,13 @@ final class Stat: KeywordProvider {
         let catKey  = KeywordUtil.normalize(category)
         let nameKey = KeywordUtil.normalize(name)
 
+        // Keep full category names as single keywords, don't break down multi-word strings
         var keys: [String] = [
             nameKey,
             "stat",
             typeKey,
             catKey
         ]
-
-        if typeKey == "attribute" { keys.append("attribute") }
-        if typeKey == "skill" { keys.append("skill") }
-
-        if catKey.contains("natural") {
-            keys.append("natural")
-            keys.append("natural skill")
-        }
 
         return Array(Set(keys.map(KeywordUtil.normalize))).sorted()
     }

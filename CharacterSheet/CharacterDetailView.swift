@@ -127,11 +127,18 @@ struct CharacterDetailView: View {
                             statDisclosureRow(stat)
                         }
                     } header: {
-                        Text(category)
-                            .font(.subheadline)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(.secondary)
-                            .textCase(nil)
+                        HStack {
+                            Text(category)
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                                .foregroundStyle(.primary)
+                            Spacer()
+                        }
+                        .padding(.vertical, 4)
+                        .padding(.horizontal, 8)
+                        .background(Color(.systemGray5))
+                        .cornerRadius(6)
+                        .textCase(nil)
                     }
                 }
             }
@@ -356,42 +363,42 @@ struct CharacterDetailView: View {
                             }
                         } label: {
                             Image(systemName: "plus.circle.fill")
-                                .font(.title3)
+                                .foregroundStyle(.blue)
                         }
                     } else {
                         Button {
                             showingAddRollNew = true
                         } label: {
                             Image(systemName: "plus.circle.fill")
-                                .font(.title3)
+                                .foregroundStyle(.blue)
                         }
                     }
                 }
-            }
 
-            Section {
                 if goalRolls.isEmpty {
                     Text("No goal rolls yet.")
                         .foregroundStyle(.secondary)
+                        .font(.callout)
                 } else {
                     ForEach(goalRolls) { roll in
-                        NavigationLink {
-                            GoalRollEditView(roll: roll, library: library)
-                        } label: {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(roll.effectiveName)
-                                Text("Goal: \(roll.goalValue)")
-                                    .font(.footnote)
-                                    .foregroundStyle(.secondary)
+                        goalRollDisclosureRow(roll)
+                            .contextMenu {
+                                Button(role: .destructive) {
+                                    modelContext.delete(roll)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
                             }
-                        }
                     }
-                    .onDelete { idx in
-                        for i in idx { character.goalRolls.remove(at: i) }
+                    .onDelete { offsets in
+                        offsets.forEach { index in
+                            modelContext.delete(goalRolls[index])
+                        }
                     }
                 }
             }
         }
+        .scrollDismissesKeyboard(.never)
         .navigationTitle(character.name)
         .navigationBarTitleDisplayMode(.inline)
         .alert("Duplicate Name", isPresented: $showingDuplicateNameAlert) {
@@ -558,7 +565,58 @@ struct CharacterDetailView: View {
             }
         }
     }
-    
+
+    @ViewBuilder
+    private func goalRollDisclosureRow(_ roll: CharacterGoalRoll) -> some View {
+        DisclosureGroup {
+            VStack(alignment: .leading, spacing: 8) {
+                if let attrStat = roll.effectiveAttributeStat {
+                    HStack {
+                        Text("Attribute")
+                        Spacer()
+                        Text(attrStat.name)
+                            .fontWeight(.medium)
+                    }
+                }
+
+                if let skillName = roll.skillName {
+                    HStack {
+                        Text("Skill")
+                        Spacer()
+                        Text(skillName)
+                            .fontWeight(.medium)
+                    }
+                }
+
+                HStack {
+                    Text("Goal Value")
+                    Spacer()
+                    Text("\(roll.goalValue)")
+                        .fontWeight(.medium)
+                        .foregroundStyle(.secondary)
+                }
+
+                Divider()
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Keywords")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Text(roll.keywordsForRules.joined(separator: ", "))
+                        .font(.caption)
+                }
+            }
+            .padding(.vertical, 4)
+        } label: {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(roll.effectiveName)
+                Text("Goal: \(roll.goalValue)")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
     // MARK: - Validation & Actions
 
     private func validateName() {
