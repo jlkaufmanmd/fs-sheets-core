@@ -369,6 +369,21 @@ final class CharacterCombatMetric: KeywordProvider {
             return calculateWyrd()
 
         default:
+            // Try to look up as a skill name (for initiatives)
+            // First check natural skills
+            if let naturalSkill = character.stats.first(where: {
+                $0.statType == "skill" && $0.name == formula
+            }) {
+                return naturalSkill.value
+            }
+
+            // Then check learned skills/lores
+            if let learnedSkill = character.learnedSkills.first(where: {
+                $0.effectiveName == formula
+            }) {
+                return learnedSkill.value
+            }
+
             return 0
         }
     }
@@ -429,6 +444,19 @@ final class CharacterCombatMetric: KeywordProvider {
             }
 
         default:
+            // Check if it's a skill lookup (for initiatives)
+            if let naturalSkill = character.stats.first(where: {
+                $0.statType == "skill" && $0.name == template.baseValueFormula
+            }) {
+                return [(naturalSkill.name, naturalSkill.value)]
+            }
+
+            if let learnedSkill = character.learnedSkills.first(where: {
+                $0.effectiveName == template.baseValueFormula
+            }) {
+                return [(learnedSkill.effectiveName, learnedSkill.value)]
+            }
+
             // Static value or unknown formula
             if let staticValue = Int(template.baseValueFormula) {
                 return [(template.baseValueFormula, staticValue)]

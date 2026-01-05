@@ -7,10 +7,6 @@ struct AddInitiativeView: View {
     @Binding var isPresented: Bool
     let subcategory: String // "Physical" or "Occult"
 
-    @State private var selectedSkill: String = ""
-    @State private var description: String = ""
-    @State private var userKeywords: String = ""
-
     private var existingInitiativeSkills: Set<String> {
         Set(character.combatMetrics
             .compactMap { $0.template }
@@ -62,79 +58,31 @@ struct AddInitiativeView: View {
         !availableNaturalSkills.isEmpty || !availableLearnedSkills.isEmpty || !availableLores.isEmpty
     }
 
-    private var canAdd: Bool {
-        !selectedSkill.isEmpty
-    }
-
     var body: some View {
         NavigationStack {
             Form {
-                Section("New Initiative") {
-                    if !hasAnySkills {
+                if !hasAnySkills {
+                    Section {
                         Text("No skills available for initiative")
                             .foregroundStyle(.secondary)
-                    } else {
-                        NavigationLink {
-                            SkillSelectionView(
-                                selectedSkill: $selectedSkill,
-                                skillsByCategory: allAvailableSkills
-                            )
-                        } label: {
-                            HStack {
-                                Text("Associated Skill")
-                                Spacer()
-                                if selectedSkill.isEmpty {
-                                    Text("Select...")
-                                        .foregroundStyle(.secondary)
-                                } else {
-                                    Text(selectedSkill)
-                                        .foregroundStyle(.secondary)
-                                }
-                            }
-                        }
+                    } header: {
+                        Text("New Initiative")
                     }
-                }
-
-                if !selectedSkill.isEmpty {
-                    Section("Preview") {
-                        HStack {
-                            Text("Name")
-                            Spacer()
-                            Text("Initiative (\(selectedSkill))")
-                                .foregroundStyle(.secondary)
-                        }
-
-                        HStack {
-                            Text("Category")
-                            Spacer()
-                            Text(subcategory)
-                                .foregroundStyle(.secondary)
-                        }
-
-                        HStack {
-                            Text("Base Value")
-                            Spacer()
-                            Text("0")
-                                .foregroundStyle(.secondary)
-                        }
+                } else {
+                    Section {
+                        Text("Select a skill to create an initiative. The initiative value will equal the skill's current value and update automatically when the skill changes.")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    } header: {
+                        Text("New Initiative")
                     }
 
-                    Section("Optional Customization") {
-                        ZStack(alignment: .topLeading) {
-                            if description.isEmpty {
-                                Text("Description (optional)...")
-                                    .foregroundStyle(.secondary)
-                                    .padding(.top, 8)
-                                    .padding(.leading, 4)
-                                    .allowsHitTesting(false)
-                            }
-                            TextEditor(text: $description)
-                                .frame(minHeight: 60)
+                    InitiativeSkillSelectionView(
+                        skillsByCategory: allAvailableSkills,
+                        onSelect: { skillName in
+                            addInitiative(for: skillName)
                         }
-
-                        TextField("Additional keywords (comma-separated)", text: $userKeywords)
-                            .autocorrectionDisabled()
-                    }
+                    )
                 }
             }
             .navigationTitle("New Initiative")
@@ -143,29 +91,23 @@ struct AddInitiativeView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { isPresented = false }
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Add") { add() }
-                        .disabled(!canAdd)
-                }
             }
         }
     }
 
-    private func add() {
-        guard !selectedSkill.isEmpty else { return }
-
+    private func addInitiative(for skillName: String) {
         // Create template for this initiative
-        let initiativeName = "Initiative (\(selectedSkill))"
-        let additionalKeywords = "\(selectedSkill.lowercased()) initiative" + (userKeywords.isEmpty ? "" : ", \(userKeywords)")
+        let initiativeName = "Initiative (\(skillName))"
+        let additionalKeywords = "\(skillName.lowercased()) initiative"
 
         let template = CombatMetricTemplate(
             name: initiativeName,
             subcategory: subcategory,
-            templateDescription: description,
+            templateDescription: "",
             additionalKeywords: additionalKeywords,
-            baseValueFormula: "0",
+            baseValueFormula: skillName, // Use skill name as formula
             isInitiative: true,
-            associatedSkillName: selectedSkill
+            associatedSkillName: skillName
         )
 
         library.combatMetricTemplates.append(template)
@@ -180,35 +122,22 @@ struct AddInitiativeView: View {
 
 // MARK: - Skill Selection View
 
-struct SkillSelectionView: View {
-    @Environment(\.dismiss) private var dismiss
-    @Binding var selectedSkill: String
+struct InitiativeSkillSelectionView: View {
     let skillsByCategory: [(category: String, skills: [String])]
+    let onSelect: (String) -> Void
 
     var body: some View {
-        Form {
-            ForEach(skillsByCategory, id: \.category) { categoryGroup in
-                Section(categoryGroup.category) {
-                    ForEach(categoryGroup.skills, id: \.self) { skill in
-                        Button {
-                            selectedSkill = skill
-                            dismiss()
-                        } label: {
-                            HStack {
-                                Text(skill)
-                                    .foregroundStyle(.primary)
-                                Spacer()
-                                if selectedSkill == skill {
-                                    Image(systemName: "checkmark")
-                                        .foregroundStyle(.blue)
-                                }
-                            }
-                        }
+        ForEach(skillsByCategory, id: \.category) { categoryGroup in
+            Section(categoryGroup.category) {
+                ForEach(categoryGroup.skills, id: \.self) { skill in
+                    Button {
+                        onSelect(skill)
+                    } label: {
+                        Text(skill)
+                            .foregroundStyle(.primary)
                     }
                 }
             }
         }
-        .navigationTitle("Select Skill")
-        .navigationBarTitleDisplayMode(.inline)
     }
 }
