@@ -69,14 +69,6 @@ struct AddInitiativeView: View {
                         Text("New Initiative")
                     }
                 } else {
-                    Section {
-                        Text("Select a skill to create an initiative. The initiative value will equal the skill's current value and update automatically when the skill changes.")
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                    } header: {
-                        Text("New Initiative")
-                    }
-
                     InitiativeSkillSelectionView(
                         skillsByCategory: allAvailableSkills,
                         onSelect: { skillName in
