@@ -224,20 +224,22 @@ struct CharacterDetailView: View {
                     .font(.subheadline)
                     .fontWeight(.bold)
                     .frame(maxWidth: .infinity, alignment: .center)
-                    .listRowInsets(EdgeInsets(top: 0.7, leading: 0, bottom: 0.7, trailing: 0))
+                    .padding(.vertical, 2)
+                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                     .listRowBackground(Color(.systemGray6))
             }
 
             Section {
                 compactAttributesGrid
             }
-            .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12))
+            .listRowInsets(EdgeInsets(top: 2, leading: 12, bottom: 4, trailing: 12))
 
             Section {
                 Text("SKILLS")
                     .font(.subheadline)
                     .fontWeight(.bold)
                     .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.vertical, 2)
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                     .listRowBackground(Color(.systemGray6))
             }
@@ -259,6 +261,9 @@ struct CharacterDetailView: View {
                         .cornerRadius(4)
 
                         naturalSkillsGrid
+                            .padding(6)
+                            .background(Color(.systemGray6))
+                            .cornerRadius(8)
                     }
 
                     // Learned Skills
@@ -311,9 +316,15 @@ struct CharacterDetailView: View {
                             Text("No learned skills yet.")
                                 .foregroundStyle(.secondary)
                                 .font(.caption)
-                                .padding(.leading, 8)
+                                .padding(6)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(Color(.systemGray6))
+                                .cornerRadius(8)
                         } else {
                             learnedSkillsGrid
+                                .padding(6)
+                                .background(Color(.systemGray6))
+                                .cornerRadius(8)
                         }
                     }
 
@@ -367,9 +378,15 @@ struct CharacterDetailView: View {
                             Text("No lore skills yet.")
                                 .foregroundStyle(.secondary)
                                 .font(.caption)
-                                .padding(.leading, 8)
+                                .padding(6)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(Color(.systemGray6))
+                                .cornerRadius(8)
                         } else {
                             loresGrid
+                                .padding(6)
+                                .background(Color(.systemGray6))
+                                .cornerRadius(8)
                         }
                     }
 
@@ -423,23 +440,27 @@ struct CharacterDetailView: View {
                             Text("No tongues yet.")
                                 .foregroundStyle(.secondary)
                                 .font(.caption)
-                                .padding(.leading, 8)
+                                .padding(6)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(Color(.systemGray6))
+                                .cornerRadius(8)
                         } else {
                             tonguesGrid
+                                .padding(6)
+                                .background(Color(.systemGray6))
+                                .cornerRadius(8)
                         }
                     }
                 }
-                .padding(8)
-                .background(Color(.systemGray6))
-                .cornerRadius(12)
             }
-            .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12))
+            .listRowInsets(EdgeInsets(top: 2, leading: 12, bottom: 4, trailing: 12))
 
             Section {
                 Text("GOAL ROLLS")
                     .font(.subheadline)
                     .fontWeight(.bold)
                     .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.vertical, 2)
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                     .listRowBackground(Color(.systemGray6))
             }
@@ -538,6 +559,7 @@ struct CharacterDetailView: View {
                     .font(.subheadline)
                     .fontWeight(.bold)
                     .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.vertical, 2)
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                     .listRowBackground(Color(.systemGray6))
             }
@@ -1102,14 +1124,20 @@ struct CharacterDetailView: View {
 
     @ViewBuilder
     private var compactAttributesGrid: some View {
-        VStack(spacing: 8) {
-            // Body row
-            HStack(spacing: 0) {
-                Text("Body")
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(.secondary)
-                    .frame(width: 70, alignment: .center)
+        VStack(spacing: 12) {
+            // Body
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text("Body")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.primary)
+                    Spacer()
+                }
+                .padding(.vertical, 2)
+                .padding(.horizontal, 8)
+                .background(Color(.systemGray5))
+                .cornerRadius(4)
 
                 HStack(spacing: 8) {
                     ForEach(bodyAttributes) { stat in
@@ -1117,20 +1145,23 @@ struct CharacterDetailView: View {
                     }
                 }
                 .padding(6)
-                .background(Color.white)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color(.systemGray4), lineWidth: 1)
-                )
+                .background(Color(.systemGray6))
+                .cornerRadius(8)
             }
 
-            // Mind row
-            HStack(spacing: 0) {
-                Text("Mind")
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(.secondary)
-                    .frame(width: 70, alignment: .center)
+            // Mind
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text("Mind")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.primary)
+                    Spacer()
+                }
+                .padding(.vertical, 2)
+                .padding(.horizontal, 8)
+                .background(Color(.systemGray5))
+                .cornerRadius(4)
 
                 HStack(spacing: 8) {
                     ForEach(mindAttributes) { stat in
@@ -1138,20 +1169,23 @@ struct CharacterDetailView: View {
                     }
                 }
                 .padding(6)
-                .background(Color.white)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color(.systemGray4), lineWidth: 1)
-                )
+                .background(Color(.systemGray6))
+                .cornerRadius(8)
             }
 
-            // Spirit section (two rows)
-            HStack(alignment: .center, spacing: 0) {
-                Text("Spirit")
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(.secondary)
-                    .frame(width: 70, alignment: .center)
+            // Spirit
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text("Spirit")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.primary)
+                    Spacer()
+                }
+                .padding(.vertical, 2)
+                .padding(.horizontal, 8)
+                .background(Color(.systemGray5))
+                .cornerRadius(4)
 
                 VStack(spacing: 6) {
                     // Row 1: Passion, Extrovert, Ego
@@ -1181,21 +1215,24 @@ struct CharacterDetailView: View {
                     }
                 }
                 .padding(6)
-                .background(Color.white)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color(.systemGray4), lineWidth: 1)
-                )
+                .background(Color(.systemGray6))
+                .cornerRadius(8)
             }
 
-            // Occult row
+            // Occult
             if !occultAttributes.isEmpty {
-                HStack(spacing: 0) {
-                    Text("Occult")
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.secondary)
-                        .frame(width: 70, alignment: .center)
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text("Occult")
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.primary)
+                        Spacer()
+                    }
+                    .padding(.vertical, 2)
+                    .padding(.horizontal, 8)
+                    .background(Color(.systemGray5))
+                    .cornerRadius(4)
 
                     HStack(spacing: 8) {
                         if let psi = occultAttributes.first(where: { $0.name == "Psi" }) {
@@ -1209,17 +1246,11 @@ struct CharacterDetailView: View {
                         Spacer()
                     }
                     .padding(6)
-                    .background(Color.white)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color(.systemGray4), lineWidth: 1)
-                    )
+                    .background(Color(.systemGray6))
+                    .cornerRadius(8)
                 }
             }
         }
-        .padding(8)
-        .background(Color(.systemGray6))
-        .cornerRadius(12)
     }
 
     @ViewBuilder
