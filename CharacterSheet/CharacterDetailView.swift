@@ -224,7 +224,7 @@ struct CharacterDetailView: View {
                     .font(.subheadline)
                     .fontWeight(.bold)
                     .frame(maxWidth: .infinity, alignment: .center)
-                    .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
+                    .listRowInsets(EdgeInsets(top: 2, leading: 0, bottom: 2, trailing: 0))
                     .listRowBackground(Color(.systemGray6))
             }
 
@@ -238,7 +238,7 @@ struct CharacterDetailView: View {
                     .font(.subheadline)
                     .fontWeight(.bold)
                     .frame(maxWidth: .infinity, alignment: .center)
-                    .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
+                    .listRowInsets(EdgeInsets(top: 2, leading: 0, bottom: 2, trailing: 0))
                     .listRowBackground(Color(.systemGray6))
             }
 
@@ -433,7 +433,7 @@ struct CharacterDetailView: View {
                     .font(.subheadline)
                     .fontWeight(.bold)
                     .frame(maxWidth: .infinity, alignment: .center)
-                    .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
+                    .listRowInsets(EdgeInsets(top: 2, leading: 0, bottom: 2, trailing: 0))
                     .listRowBackground(Color(.systemGray6))
             }
 
@@ -531,7 +531,7 @@ struct CharacterDetailView: View {
                     .font(.subheadline)
                     .fontWeight(.bold)
                     .frame(maxWidth: .infinity, alignment: .center)
-                    .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
+                    .listRowInsets(EdgeInsets(top: 2, leading: 0, bottom: 2, trailing: 0))
                     .listRowBackground(Color(.systemGray6))
             }
 
@@ -1095,54 +1095,111 @@ struct CharacterDetailView: View {
 
     @ViewBuilder
     private var compactAttributesGrid: some View {
-        HStack(alignment: .top, spacing: 8) {
-            // Body column
-            VStack(alignment: .leading, spacing: 4) {
+        VStack(spacing: 6) {
+            // Header row
+            HStack(spacing: 8) {
                 Text("Body")
                     .font(.caption2)
                     .fontWeight(.semibold)
                     .foregroundStyle(.secondary)
-                ForEach(bodyAttributes) { stat in
-                    compactStatRow(stat)
-                }
-            }
-            .frame(maxWidth: .infinity)
-
-            // Mind column
-            VStack(alignment: .leading, spacing: 4) {
+                    .frame(maxWidth: .infinity)
                 Text("Mind")
                     .font(.caption2)
                     .fontWeight(.semibold)
                     .foregroundStyle(.secondary)
-                ForEach(mindAttributes) { stat in
-                    compactStatRow(stat)
-                }
-            }
-            .frame(maxWidth: .infinity)
-
-            // Spirit + Occult column
-            VStack(alignment: .leading, spacing: 4) {
+                    .frame(maxWidth: .infinity)
                 Text("Spirit")
                     .font(.caption2)
                     .fontWeight(.semibold)
                     .foregroundStyle(.secondary)
-                ForEach(spiritAttributes) { stat in
-                    compactStatRow(stat)
-                }
+                    .frame(maxWidth: .infinity)
+            }
 
-                if !occultAttributes.isEmpty {
-                    Text("Occult")
-                        .font(.caption2)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.secondary)
-                        .padding(.top, 4)
-                    ForEach(occultAttributes) { stat in
-                        compactStatRow(stat)
+            // Body/Mind/Spirit attributes rows
+            HStack(alignment: .top, spacing: 8) {
+                VStack(spacing: 6) {
+                    ForEach(bodyAttributes) { stat in
+                        verticalStatCell(stat)
                     }
                 }
+                .frame(maxWidth: .infinity)
+
+                VStack(spacing: 6) {
+                    ForEach(mindAttributes) { stat in
+                        verticalStatCell(stat)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+
+                VStack(spacing: 6) {
+                    ForEach(spiritAttributes) { stat in
+                        verticalStatCell(stat)
+                    }
+                }
+                .frame(maxWidth: .infinity)
             }
-            .frame(maxWidth: .infinity)
+
+            // Occult section (2-column row at bottom)
+            if !occultAttributes.isEmpty {
+                Text("Occult")
+                    .font(.caption2)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 2)
+
+                HStack(alignment: .top, spacing: 8) {
+                    if let psi = occultAttributes.first(where: { $0.name == "Psi" }) {
+                        verticalStatCell(psi)
+                            .frame(maxWidth: .infinity)
+                    }
+
+                    if let theurgy = occultAttributes.first(where: { $0.name == "Theurgy" }) {
+                        verticalStatCell(theurgy)
+                            .frame(maxWidth: .infinity)
+                    }
+
+                    Spacer()
+                        .frame(maxWidth: .infinity)
+                }
+            }
         }
+    }
+
+    @ViewBuilder
+    private func verticalStatCell(_ stat: Stat) -> some View {
+        VStack(spacing: 2) {
+            Text(stat.name)
+                .font(.caption)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
+
+            HStack(spacing: 3) {
+                Button {
+                    stat.value -= 1
+                    if stat.value < stat.minimumValue { stat.value = stat.minimumValue }
+                } label: {
+                    Image(systemName: "minus.circle")
+                        .font(.caption2)
+                }
+                .buttonStyle(.plain)
+
+                Text("\(stat.value)")
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .frame(minWidth: 18)
+
+                Button {
+                    stat.value += 1
+                } label: {
+                    Image(systemName: "plus.circle")
+                        .font(.caption2)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .frame(maxWidth: .infinity)
     }
 
     @ViewBuilder
