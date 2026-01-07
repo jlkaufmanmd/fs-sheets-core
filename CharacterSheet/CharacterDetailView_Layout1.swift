@@ -224,7 +224,7 @@ struct CharacterDetailView: View {
                     .font(.subheadline)
                     .fontWeight(.bold)
                     .frame(maxWidth: .infinity, alignment: .center)
-                    .listRowInsets(EdgeInsets(top: 1, leading: 0, bottom: 1, trailing: 0))
+                    .listRowInsets(EdgeInsets(top: 2, leading: 0, bottom: 2, trailing: 0))
                     .listRowBackground(Color(.systemGray6))
             }
 
@@ -238,7 +238,7 @@ struct CharacterDetailView: View {
                     .font(.subheadline)
                     .fontWeight(.bold)
                     .frame(maxWidth: .infinity, alignment: .center)
-                    .listRowInsets(EdgeInsets(top: 1, leading: 0, bottom: 1, trailing: 0))
+                    .listRowInsets(EdgeInsets(top: 2, leading: 0, bottom: 2, trailing: 0))
                     .listRowBackground(Color(.systemGray6))
             }
 
@@ -433,7 +433,7 @@ struct CharacterDetailView: View {
                     .font(.subheadline)
                     .fontWeight(.bold)
                     .frame(maxWidth: .infinity, alignment: .center)
-                    .listRowInsets(EdgeInsets(top: 1, leading: 0, bottom: 1, trailing: 0))
+                    .listRowInsets(EdgeInsets(top: 2, leading: 0, bottom: 2, trailing: 0))
                     .listRowBackground(Color(.systemGray6))
             }
 
@@ -531,7 +531,7 @@ struct CharacterDetailView: View {
                     .font(.subheadline)
                     .fontWeight(.bold)
                     .frame(maxWidth: .infinity, alignment: .center)
-                    .listRowInsets(EdgeInsets(top: 1, leading: 0, bottom: 1, trailing: 0))
+                    .listRowInsets(EdgeInsets(top: 2, leading: 0, bottom: 2, trailing: 0))
                     .listRowBackground(Color(.systemGray6))
             }
 
@@ -1095,88 +1095,72 @@ struct CharacterDetailView: View {
 
     @ViewBuilder
     private var compactAttributesGrid: some View {
-        VStack(spacing: 8) {
-            // Body row
+        VStack(spacing: 6) {
+            // Header row
             HStack(spacing: 8) {
                 Text("Body")
-                    .font(.caption)
+                    .font(.caption2)
                     .fontWeight(.semibold)
                     .foregroundStyle(.secondary)
-                    .frame(width: 50, alignment: .leading)
-
-                ForEach(bodyAttributes) { stat in
-                    verticalStatCell(stat)
-                }
-            }
-
-            // Mind row
-            HStack(spacing: 8) {
+                    .frame(maxWidth: .infinity)
                 Text("Mind")
-                    .font(.caption)
+                    .font(.caption2)
                     .fontWeight(.semibold)
                     .foregroundStyle(.secondary)
-                    .frame(width: 50, alignment: .leading)
-
-                ForEach(mindAttributes) { stat in
-                    verticalStatCell(stat)
-                }
+                    .frame(maxWidth: .infinity)
+                Text("Spirit")
+                    .font(.caption2)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity)
             }
 
-            // Spirit section (two rows)
+            // Body/Mind/Spirit attributes rows
             HStack(alignment: .top, spacing: 8) {
-                Text("Spirit")
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(.secondary)
-                    .frame(width: 50, alignment: .leading)
+                VStack(spacing: 6) {
+                    ForEach(bodyAttributes) { stat in
+                        verticalStatCell(stat)
+                    }
+                }
+                .frame(maxWidth: .infinity)
 
                 VStack(spacing: 6) {
-                    // Row 1: Passion, Extrovert, Faith
-                    HStack(spacing: 8) {
-                        if let passion = spiritAttributes.first(where: { $0.name == "Passion" }) {
-                            verticalStatCell(passion)
-                        }
-                        if let extrovert = spiritAttributes.first(where: { $0.name == "Extrovert" }) {
-                            verticalStatCell(extrovert)
-                        }
-                        if let faith = spiritAttributes.first(where: { $0.name == "Faith" }) {
-                            verticalStatCell(faith)
-                        }
-                    }
-
-                    // Row 2: Calm, Introvert, Ego
-                    HStack(spacing: 8) {
-                        if let calm = spiritAttributes.first(where: { $0.name == "Calm" }) {
-                            verticalStatCell(calm)
-                        }
-                        if let introvert = spiritAttributes.first(where: { $0.name == "Introvert" }) {
-                            verticalStatCell(introvert)
-                        }
-                        if let ego = spiritAttributes.first(where: { $0.name == "Ego" }) {
-                            verticalStatCell(ego)
-                        }
+                    ForEach(mindAttributes) { stat in
+                        verticalStatCell(stat)
                     }
                 }
+                .frame(maxWidth: .infinity)
+
+                VStack(spacing: 6) {
+                    ForEach(spiritAttributes) { stat in
+                        verticalStatCell(stat)
+                    }
+                }
+                .frame(maxWidth: .infinity)
             }
 
-            // Occult row
+            // Occult section (2-column row at bottom)
             if !occultAttributes.isEmpty {
-                HStack(spacing: 8) {
-                    Text("Occult")
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.secondary)
-                        .frame(width: 50, alignment: .leading)
+                Text("Occult")
+                    .font(.caption2)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 2)
 
+                HStack(alignment: .top, spacing: 8) {
                     if let psi = occultAttributes.first(where: { $0.name == "Psi" }) {
                         verticalStatCell(psi)
+                            .frame(maxWidth: .infinity)
                     }
 
                     if let theurgy = occultAttributes.first(where: { $0.name == "Theurgy" }) {
                         verticalStatCell(theurgy)
+                            .frame(maxWidth: .infinity)
                     }
 
                     Spacer()
+                        .frame(maxWidth: .infinity)
                 }
             }
         }
