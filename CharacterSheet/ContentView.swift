@@ -37,15 +37,15 @@ struct ContentView: View {
             .navigationDestination(for: RPGCharacter.self) { character in
                 CharacterDetailView(character: character)
             }
-            .toolbar {
-                ToolbarItemGroup(placement: .topBarTrailing) {
+            .toolbar(content: {
+                ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         createCharacter()
                     } label: {
                         Label("Add Character", systemImage: "plus")
                     }
                 }
-            }
+            })
             .onAppear {
                 ensureLibraryExists()
             }
