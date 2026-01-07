@@ -224,7 +224,7 @@ struct CharacterDetailView: View {
                     .font(.subheadline)
                     .fontWeight(.bold)
                     .frame(maxWidth: .infinity, alignment: .center)
-                    .listRowInsets(EdgeInsets(top: 1, leading: 0, bottom: 1, trailing: 0))
+                    .listRowInsets(EdgeInsets(top: 0.7, leading: 0, bottom: 0.7, trailing: 0))
                     .listRowBackground(Color(.systemGray6))
             }
 
@@ -238,7 +238,7 @@ struct CharacterDetailView: View {
                     .font(.subheadline)
                     .fontWeight(.bold)
                     .frame(maxWidth: .infinity, alignment: .center)
-                    .listRowInsets(EdgeInsets(top: 1, leading: 0, bottom: 1, trailing: 0))
+                    .listRowInsets(EdgeInsets(top: 0.7, leading: 0, bottom: 0.7, trailing: 0))
                     .listRowBackground(Color(.systemGray6))
             }
 
@@ -433,7 +433,7 @@ struct CharacterDetailView: View {
                     .font(.subheadline)
                     .fontWeight(.bold)
                     .frame(maxWidth: .infinity, alignment: .center)
-                    .listRowInsets(EdgeInsets(top: 1, leading: 0, bottom: 1, trailing: 0))
+                    .listRowInsets(EdgeInsets(top: 0.7, leading: 0, bottom: 0.7, trailing: 0))
                     .listRowBackground(Color(.systemGray6))
             }
 
@@ -531,7 +531,7 @@ struct CharacterDetailView: View {
                     .font(.subheadline)
                     .fontWeight(.bold)
                     .frame(maxWidth: .infinity, alignment: .center)
-                    .listRowInsets(EdgeInsets(top: 1, leading: 0, bottom: 1, trailing: 0))
+                    .listRowInsets(EdgeInsets(top: 0.7, leading: 0, bottom: 0.7, trailing: 0))
                     .listRowBackground(Color(.systemGray6))
             }
 
@@ -1104,9 +1104,14 @@ struct CharacterDetailView: View {
                     .foregroundStyle(.secondary)
                     .frame(width: 50, alignment: .leading)
 
-                ForEach(bodyAttributes) { stat in
-                    verticalStatCell(stat)
+                HStack(spacing: 8) {
+                    ForEach(bodyAttributes) { stat in
+                        verticalStatCell(stat)
+                    }
                 }
+                .padding(6)
+                .background(Color(.systemGray6))
+                .cornerRadius(8)
             }
 
             // Mind row
@@ -1117,13 +1122,18 @@ struct CharacterDetailView: View {
                     .foregroundStyle(.secondary)
                     .frame(width: 50, alignment: .leading)
 
-                ForEach(mindAttributes) { stat in
-                    verticalStatCell(stat)
+                HStack(spacing: 8) {
+                    ForEach(mindAttributes) { stat in
+                        verticalStatCell(stat)
+                    }
                 }
+                .padding(6)
+                .background(Color(.systemGray6))
+                .cornerRadius(8)
             }
 
             // Spirit section (two rows)
-            HStack(alignment: .top, spacing: 8) {
+            HStack(alignment: .center, spacing: 8) {
                 Text("Spirit")
                     .font(.caption)
                     .fontWeight(.semibold)
@@ -1157,6 +1167,9 @@ struct CharacterDetailView: View {
                         }
                     }
                 }
+                .padding(6)
+                .background(Color(.systemGray6))
+                .cornerRadius(8)
             }
 
             // Occult row
@@ -1168,15 +1181,20 @@ struct CharacterDetailView: View {
                         .foregroundStyle(.secondary)
                         .frame(width: 50, alignment: .leading)
 
-                    if let psi = occultAttributes.first(where: { $0.name == "Psi" }) {
-                        verticalStatCell(psi)
-                    }
+                    HStack(spacing: 8) {
+                        if let psi = occultAttributes.first(where: { $0.name == "Psi" }) {
+                            verticalStatCell(psi)
+                        }
 
-                    if let theurgy = occultAttributes.first(where: { $0.name == "Theurgy" }) {
-                        verticalStatCell(theurgy)
-                    }
+                        if let theurgy = occultAttributes.first(where: { $0.name == "Theurgy" }) {
+                            verticalStatCell(theurgy)
+                        }
 
-                    Spacer()
+                        Spacer()
+                    }
+                    .padding(6)
+                    .background(Color(.systemGray6))
+                    .cornerRadius(8)
                 }
             }
         }
