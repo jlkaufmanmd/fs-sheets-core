@@ -40,8 +40,7 @@ struct AddGoalRollView: View {
     }
 
     private var canAdd: Bool {
-        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return false }
+        // Name can be empty now - it will be auto-generated
         guard selectedAttributeID != nil else { return false }
         return selectedNaturalSkillID != nil || selectedLearnedSkillID != nil
     }
@@ -50,9 +49,17 @@ struct AddGoalRollView: View {
         NavigationStack {
             Form {
                 Section("New Goal Roll") {
-                    TextField("Name", text: $name)
-                        .textInputAutocapitalization(.words)
-                        .autocorrectionDisabled()
+                    VStack(alignment: .leading, spacing: 4) {
+                        TextField("Name", text: $name)
+                            .textInputAutocapitalization(.words)
+                            .autocorrectionDisabled()
+                        if name.isEmpty {
+                            Text("Leave blank for Attribute + Skill")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                                .italic()
+                        }
+                    }
 
                     TextField("Keywords (comma-separated)", text: $keywords)
                         .autocorrectionDisabled()
@@ -159,19 +166,28 @@ struct AddGoalRollView: View {
     }
 
     private func add() {
-        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-
         let attr = attributes.first(where: { $0.persistentModelID == selectedAttributeID })
         let natSkill = naturalSkills.first(where: { $0.persistentModelID == selectedNaturalSkillID })
         let learnedSkill = (learnedSkills + loreSkills).first(where: { $0.persistentModelID == selectedLearnedSkillID })
+
+        // Auto-generate name if empty
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let finalName: String
+        if trimmed.isEmpty {
+            // Generate name from Attribute + Skill
+            let attrName = attr?.name ?? "Unknown"
+            let skillName = natSkill?.name ?? learnedSkill?.effectiveName ?? "Unknown"
+            finalName = "\(attrName) + \(skillName)"
+        } else {
+            finalName = trimmed
+        }
 
         // Calculate next displayOrder
         let existingRollsInCategory = character.goalRolls.filter { $0.category?.persistentModelID == category?.persistentModelID }
         let maxOrder = existingRollsInCategory.map { $0.displayOrder }.max() ?? -1
 
         let roll = CharacterGoalRoll(
-            name: trimmed,
+            name: finalName,
             description: description,
             keywords: keywords,
             baseModifier: baseModifier,
