@@ -209,12 +209,17 @@ struct AddGoalRollView: View {
             naturalSkillStat: natSkill,
             characterSkill: learnedSkill
         )
+
+        // Insert into context first
+        modelContext.insert(roll)
+
+        // Then set relationships and append
         roll.category = category
         roll.displayOrder = maxOrder + 1
         character.goalRolls.append(roll)
 
-        // Insert into model context to ensure proper persistence
-        modelContext.insert(roll)
+        // Explicitly save to ensure persistence
+        try? modelContext.save()
 
         isPresented = false
     }

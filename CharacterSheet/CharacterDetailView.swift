@@ -850,22 +850,31 @@ struct CharacterDetailView: View {
     @ViewBuilder
     private func goalRollDisclosureRow(_ roll: CharacterGoalRoll) -> some View {
         VStack(alignment: .leading, spacing: 1) {
-            // Tappable label area
-            VStack(alignment: .leading, spacing: 1) {
-                Text(roll.name)
-                    .font(.caption)
-                Text("Goal: \(roll.goalValue)")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(Rectangle())
-            .onTapGesture {
-                if expandedGoalRollID == roll.persistentModelID {
-                    expandedGoalRollID = nil
-                } else {
-                    expandedGoalRollID = roll.persistentModelID
+            // Label row with disclosure button
+            HStack {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(roll.name)
+                        .font(.caption)
+                    Text("Goal: \(roll.goalValue)")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
                 }
+
+                Spacer()
+
+                // Disclosure button
+                Button {
+                    if expandedGoalRollID == roll.persistentModelID {
+                        expandedGoalRollID = nil
+                    } else {
+                        expandedGoalRollID = roll.persistentModelID
+                    }
+                } label: {
+                    Image(systemName: expandedGoalRollID == roll.persistentModelID ? "chevron.down" : "chevron.right")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
             }
 
             // Expanded details directly below
@@ -1340,7 +1349,7 @@ struct CharacterDetailView: View {
 
     @ViewBuilder
     private var naturalSkillsGrid: some View {
-        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 4) {
+        LazyVGrid(columns: [GridItem(.flexible(), alignment: .top), GridItem(.flexible(), alignment: .top)], spacing: 4) {
             ForEach(naturalSkills) { stat in
                 compactStatRow(stat)
             }
@@ -1349,7 +1358,7 @@ struct CharacterDetailView: View {
 
     @ViewBuilder
     private var learnedSkillsGrid: some View {
-        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 4) {
+        LazyVGrid(columns: [GridItem(.flexible(), alignment: .top), GridItem(.flexible(), alignment: .top)], spacing: 4) {
             ForEach(learnedSkills) { skill in
                 compactSkillRow(skill)
             }
@@ -1358,7 +1367,7 @@ struct CharacterDetailView: View {
 
     @ViewBuilder
     private var loresGrid: some View {
-        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 4) {
+        LazyVGrid(columns: [GridItem(.flexible(), alignment: .top), GridItem(.flexible(), alignment: .top)], spacing: 4) {
             ForEach(lores) { skill in
                 compactSkillRow(skill)
             }
@@ -1367,7 +1376,7 @@ struct CharacterDetailView: View {
 
     @ViewBuilder
     private var tonguesGrid: some View {
-        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 4) {
+        LazyVGrid(columns: [GridItem(.flexible(), alignment: .top), GridItem(.flexible(), alignment: .top)], spacing: 4) {
             ForEach(tongues) { skill in
                 compactSkillRow(skill)
             }
