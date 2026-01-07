@@ -238,193 +238,200 @@ struct CharacterDetailView: View {
                     .font(.subheadline)
                     .fontWeight(.bold)
                     .frame(maxWidth: .infinity, alignment: .center)
-                    .listRowInsets(EdgeInsets(top: 0.7, leading: 0, bottom: 0.7, trailing: 0))
+                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                     .listRowBackground(Color(.systemGray6))
             }
 
             Section {
-                naturalSkillsGrid
-            } header: {
-                HStack {
-                    Text("Natural Skills")
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.primary)
-                    Spacer()
-                }
-                .padding(.vertical, 2)
-                .padding(.horizontal, 8)
-                .background(Color(.systemGray5))
-                .cornerRadius(4)
-                .textCase(nil)
-            }
-            .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12))
+                VStack(spacing: 12) {
+                    // Natural Skills
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            Text("Natural Skills")
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                                .foregroundStyle(.primary)
+                            Spacer()
+                        }
+                        .padding(.vertical, 2)
+                        .padding(.horizontal, 8)
+                        .background(Color(.systemGray5))
+                        .cornerRadius(4)
 
-            Section {
-                if learnedSkills.isEmpty {
-                    Text("No learned skills yet.")
-                        .foregroundStyle(.secondary)
-                        .font(.caption)
-                } else {
-                    learnedSkillsGrid
-                }
-            } header: {
-                HStack {
-                    Text("Learned Skills")
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.primary)
-                    Spacer()
+                        naturalSkillsGrid
+                    }
 
-                    // Category-aware add button
-                    if !learnedSkillTemplates.isEmpty {
-                        Menu {
-                            Button("New…") {
-                                selectedSkillCategory = "Learned Skills"
-                                showingQuickAddSkill = true
-                            }
+                    // Learned Skills
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            Text("Learned Skills")
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                                .foregroundStyle(.primary)
+                            Spacer()
 
-                            Divider()
+                            // Category-aware add button
+                            if !learnedSkillTemplates.isEmpty {
+                                Menu {
+                                    Button("New…") {
+                                        selectedSkillCategory = "Learned Skills"
+                                        showingQuickAddSkill = true
+                                    }
 
-                            ForEach(learnedSkillTemplates) { template in
-                                Button(template.name) {
-                                    let newSkill = CharacterSkill(template: template, value: 1)
-                                    character.learnedSkills.append(newSkill)
+                                    Divider()
+
+                                    ForEach(learnedSkillTemplates) { template in
+                                        Button(template.name) {
+                                            let newSkill = CharacterSkill(template: template, value: 1)
+                                            character.learnedSkills.append(newSkill)
+                                        }
+                                    }
+                                } label: {
+                                    Image(systemName: "plus.circle.fill")
+                                        .font(.caption)
+                                        .foregroundStyle(.blue)
+                                }
+                            } else {
+                                Button {
+                                    selectedSkillCategory = "Learned Skills"
+                                    showingQuickAddSkill = true
+                                } label: {
+                                    Image(systemName: "plus.circle.fill")
+                                        .font(.caption)
+                                        .foregroundStyle(.blue)
                                 }
                             }
-                        } label: {
-                            Image(systemName: "plus.circle.fill")
-                                .font(.caption)
-                                .foregroundStyle(.blue)
                         }
-                    } else {
-                        Button {
-                            selectedSkillCategory = "Learned Skills"
-                            showingQuickAddSkill = true
-                        } label: {
-                            Image(systemName: "plus.circle.fill")
+                        .padding(.vertical, 2)
+                        .padding(.horizontal, 8)
+                        .background(Color(.systemGray5))
+                        .cornerRadius(4)
+
+                        if learnedSkills.isEmpty {
+                            Text("No learned skills yet.")
+                                .foregroundStyle(.secondary)
                                 .font(.caption)
-                                .foregroundStyle(.blue)
+                                .padding(.leading, 8)
+                        } else {
+                            learnedSkillsGrid
+                        }
+                    }
+
+                    // Lore Skills
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            Text("Lore Skills")
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                                .foregroundStyle(.primary)
+                            Spacer()
+
+                            // Category-aware add button
+                            if !loreTemplates.isEmpty {
+                                Menu {
+                                    Button("New…") {
+                                        selectedSkillCategory = "Lores"
+                                        showingQuickAddSkill = true
+                                    }
+
+                                    Divider()
+
+                                    ForEach(loreTemplates) { template in
+                                        Button(template.name) {
+                                            let newSkill = CharacterSkill(template: template, value: 1)
+                                            character.learnedSkills.append(newSkill)
+                                        }
+                                    }
+                                } label: {
+                                    Image(systemName: "plus.circle.fill")
+                                        .font(.caption)
+                                        .foregroundStyle(.blue)
+                                }
+                            } else {
+                                Button {
+                                    selectedSkillCategory = "Lores"
+                                    showingQuickAddSkill = true
+                                } label: {
+                                    Image(systemName: "plus.circle.fill")
+                                        .font(.caption)
+                                        .foregroundStyle(.blue)
+                                }
+                            }
+                        }
+                        .padding(.vertical, 2)
+                        .padding(.horizontal, 8)
+                        .background(Color(.systemGray5))
+                        .cornerRadius(4)
+
+                        if lores.isEmpty {
+                            Text("No lore skills yet.")
+                                .foregroundStyle(.secondary)
+                                .font(.caption)
+                                .padding(.leading, 8)
+                        } else {
+                            loresGrid
+                        }
+                    }
+
+                    // Tongues
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            Text("Tongues")
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                                .foregroundStyle(.primary)
+                            Spacer()
+
+                            // Category-aware add button
+                            if !tongueTemplates.isEmpty {
+                                Menu {
+                                    Button("New…") {
+                                        selectedSkillCategory = "Tongues"
+                                        showingQuickAddSkill = true
+                                    }
+
+                                    Divider()
+
+                                    ForEach(tongueTemplates) { template in
+                                        Button(template.name) {
+                                            let newSkill = CharacterSkill(template: template, value: 1)
+                                            character.learnedSkills.append(newSkill)
+                                        }
+                                    }
+                                } label: {
+                                    Image(systemName: "plus.circle.fill")
+                                        .font(.caption)
+                                        .foregroundStyle(.blue)
+                                }
+                            } else {
+                                Button {
+                                    selectedSkillCategory = "Tongues"
+                                    showingQuickAddSkill = true
+                                } label: {
+                                    Image(systemName: "plus.circle.fill")
+                                        .font(.caption)
+                                        .foregroundStyle(.blue)
+                                }
+                            }
+                        }
+                        .padding(.vertical, 2)
+                        .padding(.horizontal, 8)
+                        .background(Color(.systemGray5))
+                        .cornerRadius(4)
+
+                        if tongues.isEmpty {
+                            Text("No tongues yet.")
+                                .foregroundStyle(.secondary)
+                                .font(.caption)
+                                .padding(.leading, 8)
+                        } else {
+                            tonguesGrid
                         }
                     }
                 }
-                .padding(.vertical, 2)
-                .padding(.horizontal, 8)
-                .background(Color(.systemGray5))
-                .cornerRadius(4)
-                .textCase(nil)
-            }
-            .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12))
-
-            Section {
-                if lores.isEmpty {
-                    Text("No lore skills yet.")
-                        .foregroundStyle(.secondary)
-                        .font(.caption)
-                } else {
-                    loresGrid
-                }
-            } header: {
-                HStack {
-                    Text("Lore Skills")
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.primary)
-                    Spacer()
-
-                    // Category-aware add button
-                    if !loreTemplates.isEmpty {
-                        Menu {
-                            Button("New…") {
-                                selectedSkillCategory = "Lores"
-                                showingQuickAddSkill = true
-                            }
-
-                            Divider()
-
-                            ForEach(loreTemplates) { template in
-                                Button(template.name) {
-                                    let newSkill = CharacterSkill(template: template, value: 1)
-                                    character.learnedSkills.append(newSkill)
-                                }
-                            }
-                        } label: {
-                            Image(systemName: "plus.circle.fill")
-                                .font(.caption)
-                                .foregroundStyle(.blue)
-                        }
-                    } else {
-                        Button {
-                            selectedSkillCategory = "Lores"
-                            showingQuickAddSkill = true
-                        } label: {
-                            Image(systemName: "plus.circle.fill")
-                                .font(.caption)
-                                .foregroundStyle(.blue)
-                        }
-                    }
-                }
-                .padding(.vertical, 2)
-                .padding(.horizontal, 8)
-                .background(Color(.systemGray5))
-                .cornerRadius(4)
-                .textCase(nil)
-            }
-            .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12))
-
-            Section {
-                if tongues.isEmpty {
-                    Text("No tongues yet.")
-                        .foregroundStyle(.secondary)
-                        .font(.caption)
-                } else {
-                    tonguesGrid
-                }
-            } header: {
-                HStack {
-                    Text("Tongues")
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.primary)
-                    Spacer()
-
-                    // Category-aware add button
-                    if !tongueTemplates.isEmpty {
-                        Menu {
-                            Button("New…") {
-                                selectedSkillCategory = "Tongues"
-                                showingQuickAddSkill = true
-                            }
-
-                            Divider()
-
-                            ForEach(tongueTemplates) { template in
-                                Button(template.name) {
-                                    let newSkill = CharacterSkill(template: template, value: 1)
-                                    character.learnedSkills.append(newSkill)
-                                }
-                            }
-                        } label: {
-                            Image(systemName: "plus.circle.fill")
-                                .font(.caption)
-                                .foregroundStyle(.blue)
-                        }
-                    } else {
-                        Button {
-                            selectedSkillCategory = "Tongues"
-                            showingQuickAddSkill = true
-                        } label: {
-                            Image(systemName: "plus.circle.fill")
-                                .font(.caption)
-                                .foregroundStyle(.blue)
-                        }
-                    }
-                }
-                .padding(.vertical, 2)
-                .padding(.horizontal, 8)
-                .background(Color(.systemGray5))
-                .cornerRadius(4)
-                .textCase(nil)
+                .padding(8)
+                .background(Color(.systemGray6))
+                .cornerRadius(12)
             }
             .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12))
 
@@ -433,7 +440,7 @@ struct CharacterDetailView: View {
                     .font(.subheadline)
                     .fontWeight(.bold)
                     .frame(maxWidth: .infinity, alignment: .center)
-                    .listRowInsets(EdgeInsets(top: 0.7, leading: 0, bottom: 0.7, trailing: 0))
+                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                     .listRowBackground(Color(.systemGray6))
             }
 
@@ -531,7 +538,7 @@ struct CharacterDetailView: View {
                     .font(.subheadline)
                     .fontWeight(.bold)
                     .frame(maxWidth: .infinity, alignment: .center)
-                    .listRowInsets(EdgeInsets(top: 0.7, leading: 0, bottom: 0.7, trailing: 0))
+                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                     .listRowBackground(Color(.systemGray6))
             }
 
@@ -1097,12 +1104,12 @@ struct CharacterDetailView: View {
     private var compactAttributesGrid: some View {
         VStack(spacing: 8) {
             // Body row
-            HStack(spacing: 8) {
+            HStack(spacing: 0) {
                 Text("Body")
                     .font(.caption)
                     .fontWeight(.semibold)
                     .foregroundStyle(.secondary)
-                    .frame(width: 50, alignment: .leading)
+                    .frame(width: 70, alignment: .center)
 
                 HStack(spacing: 8) {
                     ForEach(bodyAttributes) { stat in
@@ -1110,17 +1117,20 @@ struct CharacterDetailView: View {
                     }
                 }
                 .padding(6)
-                .background(Color(.systemGray6))
-                .cornerRadius(8)
+                .background(Color.white)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color(.systemGray4), lineWidth: 1)
+                )
             }
 
             // Mind row
-            HStack(spacing: 8) {
+            HStack(spacing: 0) {
                 Text("Mind")
                     .font(.caption)
                     .fontWeight(.semibold)
                     .foregroundStyle(.secondary)
-                    .frame(width: 50, alignment: .leading)
+                    .frame(width: 70, alignment: .center)
 
                 HStack(spacing: 8) {
                     ForEach(mindAttributes) { stat in
@@ -1128,17 +1138,20 @@ struct CharacterDetailView: View {
                     }
                 }
                 .padding(6)
-                .background(Color(.systemGray6))
-                .cornerRadius(8)
+                .background(Color.white)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color(.systemGray4), lineWidth: 1)
+                )
             }
 
             // Spirit section (two rows)
-            HStack(alignment: .center, spacing: 8) {
+            HStack(alignment: .center, spacing: 0) {
                 Text("Spirit")
                     .font(.caption)
                     .fontWeight(.semibold)
                     .foregroundStyle(.secondary)
-                    .frame(width: 50, alignment: .leading)
+                    .frame(width: 70, alignment: .center)
 
                 VStack(spacing: 6) {
                     // Row 1: Passion, Extrovert, Ego
@@ -1168,18 +1181,21 @@ struct CharacterDetailView: View {
                     }
                 }
                 .padding(6)
-                .background(Color(.systemGray6))
-                .cornerRadius(8)
+                .background(Color.white)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color(.systemGray4), lineWidth: 1)
+                )
             }
 
             // Occult row
             if !occultAttributes.isEmpty {
-                HStack(spacing: 8) {
+                HStack(spacing: 0) {
                     Text("Occult")
                         .font(.caption)
                         .fontWeight(.semibold)
                         .foregroundStyle(.secondary)
-                        .frame(width: 50, alignment: .leading)
+                        .frame(width: 70, alignment: .center)
 
                     HStack(spacing: 8) {
                         if let psi = occultAttributes.first(where: { $0.name == "Psi" }) {
@@ -1193,11 +1209,17 @@ struct CharacterDetailView: View {
                         Spacer()
                     }
                     .padding(6)
-                    .background(Color(.systemGray6))
-                    .cornerRadius(8)
+                    .background(Color.white)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color(.systemGray4), lineWidth: 1)
+                    )
                 }
             }
         }
+        .padding(8)
+        .background(Color(.systemGray6))
+        .cornerRadius(12)
     }
 
     @ViewBuilder
