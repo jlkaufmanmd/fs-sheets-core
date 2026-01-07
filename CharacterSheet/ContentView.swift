@@ -15,7 +15,16 @@ struct ContentView: View {
     @Query private var libraries: [RulesLibrary]
     
     @State private var navigationPath = NavigationPath()
-    
+
+    @ToolbarContentBuilder
+    private var toolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .topBarTrailing) {
+            Button(action: createCharacter) {
+                Label("Add Character", systemImage: "plus")
+            }
+        }
+    }
+
     var body: some View {
         NavigationStack(path: $navigationPath) {
             List {
@@ -37,13 +46,7 @@ struct ContentView: View {
             .navigationDestination(for: RPGCharacter.self) { character in
                 CharacterDetailView(character: character)
             }
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button(action: createCharacter) {
-                        Label("Add Character", systemImage: "plus")
-                    }
-                }
-            }
+            .toolbar { toolbarContent }
             .onAppear {
                 ensureLibraryExists()
             }
