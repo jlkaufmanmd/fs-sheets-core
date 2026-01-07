@@ -61,6 +61,22 @@ struct CharacterDetailView: View {
         }
     }
 
+    private var bodyAttributes: [Stat] {
+        attributes.filter { $0.category == "Body" }
+    }
+
+    private var mindAttributes: [Stat] {
+        attributes.filter { $0.category == "Mind" }
+    }
+
+    private var spiritAttributes: [Stat] {
+        attributes.filter { $0.category == "Spirit" }
+    }
+
+    private var occultAttributes: [Stat] {
+        attributes.filter { $0.category == "Occult" }
+    }
+
     private var naturalSkills: [Stat] {
         character.stats
             .filter { $0.statType == "skill" && $0.category == "Natural Skills" }
@@ -205,88 +221,57 @@ struct CharacterDetailView: View {
 
             Section {
                 Text("ATTRIBUTES")
-                    .font(.headline)
+                    .font(.subheadline)
                     .fontWeight(.bold)
                     .frame(maxWidth: .infinity, alignment: .center)
-                    .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
+                    .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
                     .listRowBackground(Color(.systemGray6))
             }
 
-            ForEach(attributesByCategory, id: \.0) { (category, stats) in
-                Section {
-                    ForEach(stats) { stat in
-                        statDisclosureRow(stat)
-                    }
-                } header: {
-                    HStack {
-                        Text(category)
-                            .font(.subheadline)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(.primary)
-                        Spacer()
-                    }
-                    .padding(.vertical, 4)
-                    .padding(.horizontal, 8)
-                    .background(Color(.systemGray5))
-                    .cornerRadius(6)
-                    .textCase(nil)
-                }
+            Section {
+                compactAttributesGrid
             }
+            .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12))
 
             Section {
                 Text("SKILLS")
-                    .font(.headline)
+                    .font(.subheadline)
                     .fontWeight(.bold)
                     .frame(maxWidth: .infinity, alignment: .center)
-                    .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
+                    .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
                     .listRowBackground(Color(.systemGray6))
             }
 
             Section {
-                ForEach(naturalSkills) { stat in
-                    statDisclosureRow(stat)
-                }
+                naturalSkillsGrid
             } header: {
                 HStack {
                     Text("Natural Skills")
-                        .font(.subheadline)
+                        .font(.caption)
                         .fontWeight(.semibold)
                         .foregroundStyle(.primary)
                     Spacer()
                 }
-                .padding(.vertical, 4)
+                .padding(.vertical, 2)
                 .padding(.horizontal, 8)
                 .background(Color(.systemGray5))
-                .cornerRadius(6)
+                .cornerRadius(4)
                 .textCase(nil)
             }
+            .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12))
 
             Section {
                 if learnedSkills.isEmpty {
                     Text("No learned skills yet.")
                         .foregroundStyle(.secondary)
-                        .font(.callout)
+                        .font(.caption)
                 } else {
-                    ForEach(learnedSkills) { skill in
-                        skillDisclosureRow(skill)
-                            .contextMenu {
-                                Button(role: .destructive) {
-                                    modelContext.delete(skill)
-                                } label: {
-                                    Label("Delete", systemImage: "trash")
-                                }
-                            }
-                    }
-                    .onDelete { offsets in
-                        offsets.forEach { index in
-                            modelContext.delete(learnedSkills[index])
-                        }
-                    }
+                    learnedSkillsGrid
                 }
             } header: {
                 HStack {
                     Text("Learned Skills")
-                        .font(.subheadline)
+                        .font(.caption)
                         .fontWeight(.semibold)
                         .foregroundStyle(.primary)
                     Spacer()
@@ -309,6 +294,7 @@ struct CharacterDetailView: View {
                             }
                         } label: {
                             Image(systemName: "plus.circle.fill")
+                                .font(.caption)
                                 .foregroundStyle(.blue)
                         }
                     } else {
@@ -317,43 +303,31 @@ struct CharacterDetailView: View {
                             showingQuickAddSkill = true
                         } label: {
                             Image(systemName: "plus.circle.fill")
+                                .font(.caption)
                                 .foregroundStyle(.blue)
                         }
                     }
                 }
-                .padding(.vertical, 4)
+                .padding(.vertical, 2)
                 .padding(.horizontal, 8)
                 .background(Color(.systemGray5))
-                .cornerRadius(6)
+                .cornerRadius(4)
                 .textCase(nil)
             }
+            .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12))
 
             Section {
                 if lores.isEmpty {
                     Text("No lore skills yet.")
                         .foregroundStyle(.secondary)
-                        .font(.callout)
+                        .font(.caption)
                 } else {
-                    ForEach(lores) { skill in
-                        skillDisclosureRow(skill)
-                            .contextMenu {
-                                Button(role: .destructive) {
-                                    modelContext.delete(skill)
-                                } label: {
-                                    Label("Delete", systemImage: "trash")
-                                }
-                            }
-                    }
-                    .onDelete { offsets in
-                        offsets.forEach { index in
-                            modelContext.delete(lores[index])
-                        }
-                    }
+                    loresGrid
                 }
             } header: {
                 HStack {
                     Text("Lore Skills")
-                        .font(.subheadline)
+                        .font(.caption)
                         .fontWeight(.semibold)
                         .foregroundStyle(.primary)
                     Spacer()
@@ -376,6 +350,7 @@ struct CharacterDetailView: View {
                             }
                         } label: {
                             Image(systemName: "plus.circle.fill")
+                                .font(.caption)
                                 .foregroundStyle(.blue)
                         }
                     } else {
@@ -384,43 +359,31 @@ struct CharacterDetailView: View {
                             showingQuickAddSkill = true
                         } label: {
                             Image(systemName: "plus.circle.fill")
+                                .font(.caption)
                                 .foregroundStyle(.blue)
                         }
                     }
                 }
-                .padding(.vertical, 4)
+                .padding(.vertical, 2)
                 .padding(.horizontal, 8)
                 .background(Color(.systemGray5))
-                .cornerRadius(6)
+                .cornerRadius(4)
                 .textCase(nil)
             }
+            .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12))
 
             Section {
                 if tongues.isEmpty {
                     Text("No tongues yet.")
                         .foregroundStyle(.secondary)
-                        .font(.callout)
+                        .font(.caption)
                 } else {
-                    ForEach(tongues) { skill in
-                        skillDisclosureRow(skill)
-                            .contextMenu {
-                                Button(role: .destructive) {
-                                    modelContext.delete(skill)
-                                } label: {
-                                    Label("Delete", systemImage: "trash")
-                                }
-                            }
-                    }
-                    .onDelete { offsets in
-                        offsets.forEach { index in
-                            modelContext.delete(tongues[index])
-                        }
-                    }
+                    tonguesGrid
                 }
             } header: {
                 HStack {
                     Text("Tongues")
-                        .font(.subheadline)
+                        .font(.caption)
                         .fontWeight(.semibold)
                         .foregroundStyle(.primary)
                     Spacer()
@@ -443,6 +406,7 @@ struct CharacterDetailView: View {
                             }
                         } label: {
                             Image(systemName: "plus.circle.fill")
+                                .font(.caption)
                                 .foregroundStyle(.blue)
                         }
                     } else {
@@ -451,186 +415,25 @@ struct CharacterDetailView: View {
                             showingQuickAddSkill = true
                         } label: {
                             Image(systemName: "plus.circle.fill")
+                                .font(.caption)
                                 .foregroundStyle(.blue)
                         }
                     }
                 }
-                .padding(.vertical, 4)
+                .padding(.vertical, 2)
                 .padding(.horizontal, 8)
                 .background(Color(.systemGray5))
-                .cornerRadius(6)
+                .cornerRadius(4)
                 .textCase(nil)
             }
-
-            Section {
-                Text("DASHBOARD")
-                    .font(.headline)
-                    .fontWeight(.bold)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
-                    .listRowBackground(Color(.systemGray6))
-            }
-
-            // Physical Combat
-            Section {
-                if physicalCombatMetrics.isEmpty {
-                    Text("No physical combat metrics yet.")
-                        .foregroundStyle(.secondary)
-                        .font(.callout)
-                } else {
-                    ForEach(physicalCombatMetrics) { metric in
-                        combatMetricDisclosureRow(metric)
-                            .contextMenu {
-                                Button(role: .destructive) {
-                                    modelContext.delete(metric)
-                                } label: {
-                                    Label("Delete", systemImage: "trash")
-                                }
-                            }
-                    }
-                    .onDelete { offsets in
-                        offsets.forEach { index in
-                            modelContext.delete(physicalCombatMetrics[index])
-                        }
-                    }
-                }
-            } header: {
-                HStack {
-                    Text("Physical Combat")
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.primary)
-                    Spacer()
-
-                    // Combat metric add button
-                    if !physicalCombatMetricTemplates.isEmpty || !skillsWithoutInitiative.isEmpty {
-                        Menu {
-                            if !skillsWithoutInitiative.isEmpty {
-                                Button("New Initiative…") {
-                                    initiativeSubcategory = "Physical"
-                                    showingAddInitiative = true
-                                }
-                            }
-
-                            if !physicalCombatMetricTemplates.isEmpty {
-                                if !skillsWithoutInitiative.isEmpty {
-                                    Divider()
-                                }
-                                ForEach(physicalCombatMetricTemplates) { template in
-                                    Button(template.name) {
-                                        let metric = CharacterCombatMetric(template: template)
-                                        character.combatMetrics.append(metric)
-                                    }
-                                }
-                            }
-                        } label: {
-                            Image(systemName: "plus.circle.fill")
-                                .foregroundStyle(.blue)
-                        }
-                        .menuStyle(.button)
-                        .buttonStyle(.borderless)
-                    }
-                }
-                .padding(.vertical, 4)
-                .padding(.horizontal, 8)
-                .background(Color(.systemGray5))
-                .cornerRadius(6)
-                .textCase(nil)
-            }
-
-            // Combat Metrics - Occult
-            Section {
-                if occultCombatMetrics.isEmpty {
-                    Text("No occult combat metrics yet.")
-                        .foregroundStyle(.secondary)
-                        .font(.callout)
-                } else {
-                    ForEach(occultCombatMetrics) { metric in
-                        combatMetricDisclosureRow(metric)
-                            .contextMenu {
-                                Button(role: .destructive) {
-                                    modelContext.delete(metric)
-                                } label: {
-                                    Label("Delete", systemImage: "trash")
-                                }
-                            }
-                    }
-                    .onDelete { offsets in
-                        offsets.forEach { index in
-                            modelContext.delete(occultCombatMetrics[index])
-                        }
-                    }
-                }
-            } header: {
-                HStack {
-                    Text("Occult Combat")
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.primary)
-                    Spacer()
-
-                    // Combat metric add button
-                    if !occultCombatMetricTemplates.isEmpty || !skillsWithoutInitiative.isEmpty {
-                        Menu {
-                            if !skillsWithoutInitiative.isEmpty {
-                                Button("New Initiative…") {
-                                    initiativeSubcategory = "Occult"
-                                    showingAddInitiative = true
-                                }
-                            }
-
-                            if !occultCombatMetricTemplates.isEmpty {
-                                if !skillsWithoutInitiative.isEmpty {
-                                    Divider()
-                                }
-                                ForEach(occultCombatMetricTemplates) { template in
-                                    Button(template.name) {
-                                        let metric = CharacterCombatMetric(template: template)
-                                        character.combatMetrics.append(metric)
-                                    }
-                                }
-                            }
-                        } label: {
-                            Image(systemName: "plus.circle.fill")
-                                .foregroundStyle(.blue)
-                        }
-                        .menuStyle(.button)
-                        .buttonStyle(.borderless)
-                    }
-                }
-                .padding(.vertical, 4)
-                .padding(.horizontal, 8)
-                .background(Color(.systemGray5))
-                .cornerRadius(6)
-                .textCase(nil)
-            }
-
-            // General Traits
-            Section {
-                Text("Coming soon")
-                    .foregroundStyle(.secondary)
-                    .font(.callout)
-            } header: {
-                HStack {
-                    Text("General Traits")
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.primary)
-                    Spacer()
-                }
-                .padding(.vertical, 4)
-                .padding(.horizontal, 8)
-                .background(Color(.systemGray5))
-                .cornerRadius(6)
-                .textCase(nil)
-            }
+            .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12))
 
             Section {
                 Text("GOAL ROLLS")
-                    .font(.headline)
+                    .font(.subheadline)
                     .fontWeight(.bold)
                     .frame(maxWidth: .infinity, alignment: .center)
-                    .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
+                    .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
                     .listRowBackground(Color(.systemGray6))
             }
 
@@ -641,7 +444,7 @@ struct CharacterDetailView: View {
                     if rolls.isEmpty {
                         Text("No goal rolls yet.")
                             .foregroundStyle(.secondary)
-                            .font(.callout)
+                            .font(.caption)
                     } else {
                         ForEach(rolls) { roll in
                             goalRollDisclosureRow(roll)
@@ -667,7 +470,7 @@ struct CharacterDetailView: View {
                 } header: {
                     HStack {
                         Text(category.name)
-                            .font(.subheadline)
+                            .font(.caption)
                             .fontWeight(.semibold)
                             .foregroundStyle(.primary)
                         Spacer()
@@ -699,26 +502,193 @@ struct CharacterDetailView: View {
                             }
                         } label: {
                             Image(systemName: "gearshape")
+                                .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
                         .buttonStyle(.borderless)
 
-                        // Add button (simplified for now)
+                        // Add button
                         Button {
                             selectedCategoryForNewRoll = category
                             showingAddRollNew = true
                         } label: {
                             Image(systemName: "plus.circle.fill")
+                                .font(.caption)
                                 .foregroundStyle(.blue)
                         }
                         .buttonStyle(.borderless)
                     }
-                    .padding(.vertical, 4)
+                    .padding(.vertical, 2)
                     .padding(.horizontal, 8)
                     .background(Color(.systemGray5))
-                    .cornerRadius(6)
+                    .cornerRadius(4)
                     .textCase(nil)
                 }
+            }
+
+            Section {
+                Text("DASHBOARD")
+                    .font(.subheadline)
+                    .fontWeight(.bold)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
+                    .listRowBackground(Color(.systemGray6))
+            }
+
+            // Physical Combat
+            Section {
+                if physicalCombatMetrics.isEmpty {
+                    Text("No physical combat metrics yet.")
+                        .foregroundStyle(.secondary)
+                        .font(.callout)
+                } else {
+                    ForEach(physicalCombatMetrics) { metric in
+                        combatMetricDisclosureRow(metric)
+                            .contextMenu {
+                                Button(role: .destructive) {
+                                    modelContext.delete(metric)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
+                    }
+                    .onDelete { offsets in
+                        offsets.forEach { index in
+                            modelContext.delete(physicalCombatMetrics[index])
+                        }
+                    }
+                }
+            } header: {
+                HStack {
+                    Text("Physical Combat")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.primary)
+                    Spacer()
+
+                    // Combat metric add button
+                    if !physicalCombatMetricTemplates.isEmpty || !skillsWithoutInitiative.isEmpty {
+                        Menu {
+                            if !skillsWithoutInitiative.isEmpty {
+                                Button("New Initiative…") {
+                                    initiativeSubcategory = "Physical"
+                                    showingAddInitiative = true
+                                }
+                            }
+
+                            if !physicalCombatMetricTemplates.isEmpty {
+                                if !skillsWithoutInitiative.isEmpty {
+                                    Divider()
+                                }
+                                ForEach(physicalCombatMetricTemplates) { template in
+                                    Button(template.name) {
+                                        let metric = CharacterCombatMetric(template: template)
+                                        character.combatMetrics.append(metric)
+                                    }
+                                }
+                            }
+                        } label: {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.caption)
+                                .foregroundStyle(.blue)
+                        }
+                        .menuStyle(.button)
+                        .buttonStyle(.borderless)
+                    }
+                }
+                .padding(.vertical, 2)
+                .padding(.horizontal, 8)
+                .background(Color(.systemGray5))
+                .cornerRadius(4)
+                .textCase(nil)
+            }
+
+            // Combat Metrics - Occult
+            Section {
+                if occultCombatMetrics.isEmpty {
+                    Text("No occult combat metrics yet.")
+                        .foregroundStyle(.secondary)
+                        .font(.callout)
+                } else {
+                    ForEach(occultCombatMetrics) { metric in
+                        combatMetricDisclosureRow(metric)
+                            .contextMenu {
+                                Button(role: .destructive) {
+                                    modelContext.delete(metric)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
+                    }
+                    .onDelete { offsets in
+                        offsets.forEach { index in
+                            modelContext.delete(occultCombatMetrics[index])
+                        }
+                    }
+                }
+            } header: {
+                HStack {
+                    Text("Occult Combat")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.primary)
+                    Spacer()
+
+                    // Combat metric add button
+                    if !occultCombatMetricTemplates.isEmpty || !skillsWithoutInitiative.isEmpty {
+                        Menu {
+                            if !skillsWithoutInitiative.isEmpty {
+                                Button("New Initiative…") {
+                                    initiativeSubcategory = "Occult"
+                                    showingAddInitiative = true
+                                }
+                            }
+
+                            if !occultCombatMetricTemplates.isEmpty {
+                                if !skillsWithoutInitiative.isEmpty {
+                                    Divider()
+                                }
+                                ForEach(occultCombatMetricTemplates) { template in
+                                    Button(template.name) {
+                                        let metric = CharacterCombatMetric(template: template)
+                                        character.combatMetrics.append(metric)
+                                    }
+                                }
+                            }
+                        } label: {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.caption)
+                                .foregroundStyle(.blue)
+                        }
+                        .menuStyle(.button)
+                        .buttonStyle(.borderless)
+                    }
+                }
+                .padding(.vertical, 2)
+                .padding(.horizontal, 8)
+                .background(Color(.systemGray5))
+                .cornerRadius(4)
+                .textCase(nil)
+            }
+
+            // General Traits
+            Section {
+                Text("Coming soon")
+                    .foregroundStyle(.secondary)
+                    .font(.caption)
+            } header: {
+                HStack {
+                    Text("General Traits")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.primary)
+                    Spacer()
+                }
+                .padding(.vertical, 2)
+                .padding(.horizontal, 8)
+                .background(Color(.systemGray5))
+                .cornerRadius(4)
+                .textCase(nil)
             }
         }
         .scrollDismissesKeyboard(.never)
@@ -983,13 +953,15 @@ struct CharacterDetailView: View {
     @ViewBuilder
     private func goalRollDisclosureRow(_ roll: CharacterGoalRoll) -> some View {
         DisclosureGroup {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 6) {
                 // Show calculation breakdown
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 2) {
                     HStack {
                         Text("Goal Value")
+                            .font(.caption)
                         Spacer()
                         Text("\(roll.goalValue)")
+                            .font(.caption)
                             .fontWeight(.bold)
                     }
 
@@ -997,11 +969,11 @@ struct CharacterDetailView: View {
                     if let attrStat = roll.attributeStat {
                         HStack {
                             Text("  \(attrStat.name)")
-                                .font(.callout)
+                                .font(.caption2)
                                 .foregroundStyle(.secondary)
                             Spacer()
                             Text("\(attrStat.value)")
-                                .font(.callout)
+                                .font(.caption2)
                                 .foregroundStyle(.secondary)
                         }
                     }
@@ -1009,11 +981,11 @@ struct CharacterDetailView: View {
                     if let skillName = roll.skillName, let skillValue = roll.skillValue {
                         HStack {
                             Text("  \(skillName)")
-                                .font(.callout)
+                                .font(.caption2)
                                 .foregroundStyle(.secondary)
                             Spacer()
                             Text("\(skillValue)")
-                                .font(.callout)
+                                .font(.caption2)
                                 .foregroundStyle(.secondary)
                         }
                     }
@@ -1021,11 +993,11 @@ struct CharacterDetailView: View {
                     if roll.baseModifier != 0 {
                         HStack {
                             Text("  Base Modifier")
-                                .font(.callout)
+                                .font(.caption2)
                                 .foregroundStyle(.secondary)
                             Spacer()
                             Text("\(roll.baseModifier >= 0 ? "+" : "")\(roll.baseModifier)")
-                                .font(.callout)
+                                .font(.caption2)
                                 .foregroundStyle(.secondary)
                         }
                     }
@@ -1033,20 +1005,21 @@ struct CharacterDetailView: View {
 
                 Divider()
 
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 2) {
                     Text("Keywords")
-                        .font(.subheadline)
+                        .font(.caption2)
                         .foregroundStyle(.secondary)
                     Text(roll.keywordsForRules.joined(separator: ", "))
-                        .font(.caption)
+                        .font(.caption2)
                 }
             }
-            .padding(.vertical, 4)
+            .padding(.vertical, 2)
         } label: {
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 1) {
                 Text(roll.name)
+                    .font(.caption)
                 Text("Goal: \(roll.goalValue)")
-                    .font(.footnote)
+                    .font(.caption2)
                     .foregroundStyle(.secondary)
             }
         }
@@ -1055,12 +1028,14 @@ struct CharacterDetailView: View {
     @ViewBuilder
     private func combatMetricDisclosureRow(_ metric: CharacterCombatMetric) -> some View {
         DisclosureGroup {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 6) {
                 if !metric.effectiveDescription.isEmpty {
                     HStack {
                         Text("Description")
+                            .font(.caption2)
                         Spacer()
                         Text(metric.effectiveDescription)
+                            .font(.caption2)
                             .fontWeight(.medium)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.trailing)
@@ -1068,11 +1043,13 @@ struct CharacterDetailView: View {
                 }
 
                 // Show calculation breakdown
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 2) {
                     HStack {
                         Text("Base Value")
+                            .font(.caption)
                         Spacer()
                         Text("\(metric.calculatedBaseValue)")
+                            .font(.caption)
                             .fontWeight(.bold)
                     }
 
@@ -1080,11 +1057,11 @@ struct CharacterDetailView: View {
                     ForEach(Array(metric.calculationBreakdown.enumerated()), id: \.offset) { _, component in
                         HStack {
                             Text("  \(component.0)")
-                                .font(.callout)
+                                .font(.caption2)
                                 .foregroundStyle(.secondary)
                             Spacer()
                             Text("\(component.1)")
-                                .font(.callout)
+                                .font(.caption2)
                                 .foregroundStyle(.secondary)
                         }
                     }
@@ -1092,22 +1069,182 @@ struct CharacterDetailView: View {
 
                 Divider()
 
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 2) {
                     Text("Keywords")
-                        .font(.subheadline)
+                        .font(.caption2)
                         .foregroundStyle(.secondary)
                     Text(metric.keywordsForRules.joined(separator: ", "))
-                        .font(.caption)
+                        .font(.caption2)
                 }
             }
-            .padding(.vertical, 4)
+            .padding(.vertical, 2)
         } label: {
             HStack {
                 Text(metric.effectiveName)
+                    .font(.caption)
                 Spacer()
                 Text("\(metric.calculatedBaseValue)")
-                    .font(.headline)
+                    .font(.caption)
+                    .fontWeight(.semibold)
                     .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    // MARK: - Grid Views
+
+    @ViewBuilder
+    private var compactAttributesGrid: some View {
+        HStack(alignment: .top, spacing: 8) {
+            // Body column
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Body")
+                    .font(.caption2)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.secondary)
+                ForEach(bodyAttributes) { stat in
+                    compactStatRow(stat)
+                }
+            }
+            .frame(maxWidth: .infinity)
+
+            // Mind column
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Mind")
+                    .font(.caption2)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.secondary)
+                ForEach(mindAttributes) { stat in
+                    compactStatRow(stat)
+                }
+            }
+            .frame(maxWidth: .infinity)
+
+            // Spirit + Occult column
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Spirit")
+                    .font(.caption2)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.secondary)
+                ForEach(spiritAttributes) { stat in
+                    compactStatRow(stat)
+                }
+
+                if !occultAttributes.isEmpty {
+                    Text("Occult")
+                        .font(.caption2)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.secondary)
+                        .padding(.top, 4)
+                    ForEach(occultAttributes) { stat in
+                        compactStatRow(stat)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity)
+        }
+    }
+
+    @ViewBuilder
+    private func compactStatRow(_ stat: Stat) -> some View {
+        HStack(spacing: 4) {
+            Text(stat.name)
+                .font(.caption)
+            Spacer()
+            Button {
+                stat.value -= 1
+                if stat.value < stat.minimumValue { stat.value = stat.minimumValue }
+            } label: {
+                Image(systemName: "minus.circle")
+                    .font(.caption2)
+            }
+            .buttonStyle(.plain)
+
+            Text("\(stat.value)")
+                .font(.caption)
+                .fontWeight(.semibold)
+                .frame(minWidth: 20)
+
+            Button {
+                stat.value += 1
+            } label: {
+                Image(systemName: "plus.circle")
+                    .font(.caption2)
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    @ViewBuilder
+    private var naturalSkillsGrid: some View {
+        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 4) {
+            ForEach(naturalSkills) { stat in
+                compactStatRow(stat)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var learnedSkillsGrid: some View {
+        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 4) {
+            ForEach(learnedSkills) { skill in
+                compactSkillRow(skill)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var loresGrid: some View {
+        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 4) {
+            ForEach(lores) { skill in
+                compactSkillRow(skill)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var tonguesGrid: some View {
+        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 4) {
+            ForEach(tongues) { skill in
+                compactSkillRow(skill)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func compactSkillRow(_ skill: CharacterSkill) -> some View {
+        HStack(spacing: 4) {
+            Text(skill.effectiveName)
+                .font(.caption)
+                .lineLimit(1)
+            Spacer()
+            Button {
+                skill.value -= 1
+                if skill.value < skill.minimumValue { skill.value = skill.minimumValue }
+            } label: {
+                Image(systemName: "minus.circle")
+                    .font(.caption2)
+            }
+            .buttonStyle(.plain)
+
+            Text("\(skill.value)")
+                .font(.caption)
+                .fontWeight(.semibold)
+                .frame(minWidth: 20)
+
+            Button {
+                skill.value += 1
+            } label: {
+                Image(systemName: "plus.circle")
+                    .font(.caption2)
+            }
+            .buttonStyle(.plain)
+        }
+        .contextMenu {
+            Button(role: .destructive) {
+                modelContext.delete(skill)
+            } label: {
+                Label("Delete", systemImage: "trash")
             }
         }
     }
