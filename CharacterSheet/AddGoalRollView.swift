@@ -166,6 +166,10 @@ struct AddGoalRollView: View {
         let natSkill = naturalSkills.first(where: { $0.persistentModelID == selectedNaturalSkillID })
         let learnedSkill = (learnedSkills + loreSkills).first(where: { $0.persistentModelID == selectedLearnedSkillID })
 
+        // Calculate next displayOrder
+        let existingRollsInCategory = character.goalRolls.filter { $0.category?.persistentModelID == category?.persistentModelID }
+        let maxOrder = existingRollsInCategory.map { $0.displayOrder }.max() ?? -1
+
         let roll = CharacterGoalRoll(
             name: trimmed,
             description: description,
@@ -176,6 +180,7 @@ struct AddGoalRollView: View {
             characterSkill: learnedSkill
         )
         roll.category = category
+        roll.displayOrder = maxOrder + 1
         character.goalRolls.append(roll)
 
         isPresented = false

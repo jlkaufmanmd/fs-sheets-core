@@ -29,6 +29,7 @@ struct CharacterDetailView: View {
     @State private var categoryToDelete: GoalRollCategory?
     @State private var deleteCategoryAction: DeleteCategoryAction = .deleteRolls
     @State private var migrationTargetCategory: GoalRollCategory?
+    @State private var showingMigrationPicker = false
 
     // Inline value editing focus (tap number to type)
     @FocusState private var focusedStatID: PersistentIdentifier?
@@ -650,6 +651,9 @@ struct CharacterDetailView: View {
                                     }
                                 }
                         }
+                        .onMove { fromOffsets, toOffset in
+                            moveGoalRolls(in: category, from: fromOffsets, to: toOffset)
+                        }
                     }
                 } header: {
                     HStack {
@@ -751,7 +755,8 @@ struct CharacterDetailView: View {
                     deleteCategory(category, deleteRolls: true)
                 }
                 Button("Move Rolls to...") {
-                    deleteCategoryAction = .migrateRolls
+                    showingDeleteCategoryAlert = false
+                    showingMigrationPicker = true
                 }
                 Button("Cancel", role: .cancel) {
                     categoryToDelete = nil
@@ -788,6 +793,17 @@ struct CharacterDetailView: View {
             if let lib = library {
                 AddInitiativeView(character: character, library: lib, isPresented: $showingAddInitiative, subcategory: initiativeSubcategory)
             }
+        }
+        .sheet(isPresented: $showingMigrationPicker) {
+            MigrationPickerView(
+                isPresented: $showingMigrationPicker,
+                categories: goalRollCategories.filter { $0.persistentModelID != categoryToDelete?.persistentModelID },
+                onSelect: { targetCategory in
+                    if let categoryToDelete {
+                        migrateAndDeleteCategory(categoryToDelete, to: targetCategory)
+                    }
+                }
+            )
         }
         .alert("New \(alertSkillTypeLabel)", isPresented: $showingQuickAddSkill) {
             TextField("Name", text: $quickAddSkillName)
@@ -1256,17 +1272,33 @@ struct CharacterDetailView: View {
             for roll in rolls {
                 modelContext.delete(roll)
             }
-        } else {
-            // This case will be handled when we implement migration
-            // For now, just delete rolls
-            let rolls = goalRollsForCategory(category)
-            for roll in rolls {
-                modelContext.delete(roll)
-            }
         }
 
         // Delete the category
         modelContext.delete(category)
         categoryToDelete = nil
+    }
+
+    private func migrateAndDeleteCategory(_ category: GoalRollCategory, to targetCategory: GoalRollCategory) {
+        // Move all goal rolls to the target category
+        let rolls = goalRollsForCategory(category)
+        for roll in rolls {
+            roll.category = targetCategory
+        }
+
+        // Delete the now-empty category
+        modelContext.delete(category)
+        categoryToDelete = nil
+        showingMigrationPicker = false
+    }
+
+    private func moveGoalRolls(in category: GoalRollCategory, from source: IndexSet, to destination: Int) {
+        var rolls = goalRollsForCategory(category)
+        rolls.move(fromOffsets: source, toOffset: destination)
+
+        // Update displayOrder for all rolls in this category
+        for (index, roll) in rolls.enumerated() {
+            roll.displayOrder = index
+        }
     }
 }
