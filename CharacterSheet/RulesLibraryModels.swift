@@ -187,115 +187,69 @@ final class GoalRollCategory {
 
 @Model
 final class CharacterGoalRoll: KeywordProvider {
-    var isBranched: Bool
-    var branchedDate: Date?
-
-    var overrideName: String
-    var overrideDescription: String
-    var overrideBaseModifier: Int
-    var overrideUserKeywords: String
-
+    var name: String
+    var rollDescription: String
+    var userKeywords: String
+    var baseModifier: Int
     var displayOrder: Int
 
-    var template: GoalRollTemplate?
-
-    // When branched: used as overrides
+    // Formula components
     var attributeStat: Stat?
-    var naturalSkillStat: Stat?
-    var characterSkill: CharacterSkill?
+    var naturalSkillStat: Stat?      // For natural skills
+    var characterSkill: CharacterSkill?  // For learned/lore skills
 
     var character: RPGCharacter?
     var category: GoalRollCategory?
 
     init(
-        template: GoalRollTemplate,
+        name: String = "",
+        description: String = "",
+        keywords: String = "",
+        baseModifier: Int = 0,
         attributeStat: Stat? = nil,
         naturalSkillStat: Stat? = nil,
         characterSkill: CharacterSkill? = nil
     ) {
-        self.template = template
+        self.name = name
+        self.rollDescription = description
+        self.userKeywords = keywords
+        self.baseModifier = baseModifier
+        self.displayOrder = 0
         self.attributeStat = attributeStat
         self.naturalSkillStat = naturalSkillStat
         self.characterSkill = characterSkill
-
-        self.isBranched = false
-        self.branchedDate = nil
-        self.overrideName = ""
-        self.overrideDescription = ""
-        self.overrideBaseModifier = 0
-        self.overrideUserKeywords = ""
-        self.displayOrder = 0
-    }
-
-    // MARK: - Template fields (name/desc/mod/keywords)
-
-    var effectiveName: String { isBranched ? overrideName : (template?.name ?? overrideName) }
-    var effectiveDescription: String { isBranched ? overrideDescription : (template?.templateDescription ?? overrideDescription) }
-    var effectiveBaseModifier: Int { isBranched ? overrideBaseModifier : (template?.baseModifier ?? overrideBaseModifier) }
-    var effectiveUserKeywords: String { isBranched ? overrideUserKeywords : (template?.userKeywords ?? overrideUserKeywords) }
-
-    // MARK: - Formula resolution (template-defaults unless branched)
-
-    var effectiveSkillMode: GoalRollTemplate.SkillMode {
-        if isBranched {
-            return characterSkill != nil ? .learned : .natural
-        }
-        return template?.defaultSkillMode ?? .natural
-    }
-
-    var effectiveAttributeStat: Stat? {
-        if isBranched { return attributeStat }
-        guard let character, let t = template else { return nil }
-        return character.stats.first(where: {
-            KeywordUtil.normalize($0.statType) == "attribute" &&
-            KeywordUtil.normalize($0.category) == KeywordUtil.normalize(t.defaultAttributeCategory) &&
-            $0.name.caseInsensitiveCompare(t.defaultAttributeName) == .orderedSame
-        })
-    }
-
-    var effectiveNaturalSkillStat: Stat? {
-        if isBranched { return naturalSkillStat }
-        guard let character, let t = template else { return nil }
-        guard t.defaultSkillMode == .natural else { return nil }
-        return character.stats.first(where: {
-            KeywordUtil.normalize($0.statType) == "skill" &&
-            KeywordUtil.normalize($0.category) == KeywordUtil.normalize("Natural Skills") &&
-            $0.name.caseInsensitiveCompare(t.defaultNaturalSkillName) == .orderedSame
-        })
-    }
-
-    var effectiveCharacterSkill: CharacterSkill? {
-        if isBranched { return characterSkill }
-        guard let character, let t = template else { return nil }
-        guard t.defaultSkillMode == .learned, let learnedTemplate = t.defaultLearnedSkillTemplate else { return nil }
-
-        return character.learnedSkills.first(where: {
-            $0.template?.persistentModelID == learnedTemplate.persistentModelID
-        })
     }
 
     var goalValue: Int {
-        let attrValue = effectiveAttributeStat?.value ?? 0
-        let skillValue: Int = (effectiveSkillMode == .natural)
-            ? (effectiveNaturalSkillStat?.value ?? 0)
-            : (effectiveCharacterSkill?.value ?? 0)
+        let attrValue = attributeStat?.value ?? 0
+        let skillValue: Int
+        if let natSkill = naturalSkillStat {
+            skillValue = natSkill.value
+        } else if let learnedSkill = characterSkill {
+            skillValue = learnedSkill.value
+        } else {
+            skillValue = 0
+        }
 
-        return attrValue + skillValue + effectiveBaseModifier
+        return attrValue + skillValue + baseModifier
     }
 
     var skillName: String? {
-        if effectiveSkillMode == .natural { return effectiveNaturalSkillStat?.name }
-        return effectiveCharacterSkill?.effectiveName
+        if let natSkill = naturalSkillStat {
+            return natSkill.name
+        } else if let learnedSkill = characterSkill {
+            return learnedSkill.effectiveName
+        }
+        return nil
     }
 
-    // ✅ Important fix: use EFFECTIVE values so non-branched rolls still produce good keywords.
     var keywordsForRules: [String] {
-        var base = [effectiveName, "goal roll"]
+        var base = [name, "goal roll"]
 
-        if let attr = effectiveAttributeStat?.name { base.append(attr) }
-        if let s = skillName { base.append(s) }
+        if let attr = attributeStat?.name { base.append(attr) }
+        if let skill = skillName { base.append(skill) }
 
-        return KeywordUtil.make(base: base, user: effectiveUserKeywords)
+        return KeywordUtil.make(base: base, user: userKeywords)
     }
 }
 

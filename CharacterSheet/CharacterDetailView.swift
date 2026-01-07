@@ -105,11 +105,6 @@ struct CharacterDetailView: View {
         return library.skillTemplates.filter { !existingTemplateIDs.contains($0.persistentModelID) }
     }
 
-    private var availableGoalRollTemplates: [GoalRollTemplate] {
-        guard let library else { return [] }
-        let existingTemplateIDs = Set(character.goalRolls.compactMap { $0.template?.persistentModelID })
-        return library.goalRollTemplates.filter { !existingTemplateIDs.contains($0.persistentModelID) }
-    }
 
     private var availableCombatMetricTemplates: [CombatMetricTemplate] {
         guard let library else { return [] }
@@ -787,9 +782,7 @@ struct CharacterDetailView: View {
             previousValidName = character.name
         }
         .sheet(isPresented: $showingAddRollNew) {
-            if let lib = library {
-                AddGoalRollView(character: character, library: lib, isPresented: $showingAddRollNew, mode: .new, category: selectedCategoryForNewRoll)
-            }
+            AddGoalRollView(character: character, isPresented: $showingAddRollNew, category: selectedCategoryForNewRoll)
         }
         .sheet(isPresented: $showingAddInitiative) {
             if let lib = library {
@@ -949,7 +942,7 @@ struct CharacterDetailView: View {
     private func goalRollDisclosureRow(_ roll: CharacterGoalRoll) -> some View {
         DisclosureGroup {
             VStack(alignment: .leading, spacing: 8) {
-                if let attrStat = roll.effectiveAttributeStat {
+                if let attrStat = roll.attributeStat {
                     HStack {
                         Text("Attribute")
                         Spacer()
@@ -988,7 +981,7 @@ struct CharacterDetailView: View {
             .padding(.vertical, 4)
         } label: {
             VStack(alignment: .leading, spacing: 2) {
-                Text(roll.effectiveName)
+                Text(roll.name)
                 Text("Goal: \(roll.goalValue)")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
