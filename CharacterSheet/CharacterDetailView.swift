@@ -230,7 +230,6 @@ struct CharacterDetailView: View {
                     compactAttributesGrid
                 }
             }
-            .listRowBackground(Color.clear)
 
             Section {
                 VStack(spacing: 6) {
@@ -445,7 +444,6 @@ struct CharacterDetailView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                 }
             }
-            .listRowBackground(Color.clear)
 
             Section {
                 VStack(spacing: 6) {
@@ -456,7 +454,6 @@ struct CharacterDetailView: View {
                         .frame(maxWidth: .infinity, alignment: .center)
                 }
             }
-            .listRowBackground(Color.clear)
 
             // Goal Roll Categories
             Section {
@@ -556,7 +553,6 @@ struct CharacterDetailView: View {
                     }
                 }
             }
-            .listRowBackground(Color.clear)
 
             Section {
                 VStack(spacing: 6) {
@@ -567,7 +563,6 @@ struct CharacterDetailView: View {
                         .frame(maxWidth: .infinity, alignment: .center)
                 }
             }
-            .listRowBackground(Color.clear)
 
             // Physical Combat
             Section {
