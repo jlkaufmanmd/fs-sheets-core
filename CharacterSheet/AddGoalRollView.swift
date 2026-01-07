@@ -54,10 +54,22 @@ struct AddGoalRollView: View {
                             .textInputAutocapitalization(.words)
                             .autocorrectionDisabled()
                         if name.isEmpty {
-                            Text("Leave blank for Attribute + Skill")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                                .italic()
+                            HStack(spacing: 0) {
+                                Text("Leave blank for ")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                                Text("Attribute")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                                    .italic()
+                                Text(" + ")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                                Text("Skill")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                                    .italic()
+                            }
                         }
                     }
 

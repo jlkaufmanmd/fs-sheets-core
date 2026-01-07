@@ -256,17 +256,9 @@ struct CharacterDetailView: View {
                         .padding(.horizontal, 8)
                         .background(Color(.systemGray5))
 
-                        VStack(spacing: 6) {
-                            naturalSkillsGrid
-
-                            // Show expanded details below if any natural skill is expanded
-                            if let expandedID = expandedStatID,
-                               let expandedStat = naturalSkills.first(where: { $0.persistentModelID == expandedID }) {
-                                statDetailsView(expandedStat)
-                            }
-                        }
-                        .padding(6)
-                        .background(Color.white)
+                        naturalSkillsGrid
+                            .padding(6)
+                            .background(Color.white)
                     }
                     .clipShape(RoundedRectangle(cornerRadius: 8))
 
@@ -325,17 +317,9 @@ struct CharacterDetailView: View {
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .background(Color.white)
                         } else {
-                            VStack(spacing: 6) {
-                                learnedSkillsGrid
-
-                                // Show expanded details below if any learned skill is expanded
-                                if let expandedID = expandedSkillID,
-                                   let expandedSkill = learnedSkills.first(where: { $0.persistentModelID == expandedID }) {
-                                    skillDetailsView(expandedSkill)
-                                }
-                            }
-                            .padding(6)
-                            .background(Color.white)
+                            learnedSkillsGrid
+                                .padding(6)
+                                .background(Color.white)
                         }
                     }
                     .clipShape(RoundedRectangle(cornerRadius: 8))
@@ -395,17 +379,9 @@ struct CharacterDetailView: View {
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .background(Color.white)
                         } else {
-                            VStack(spacing: 6) {
-                                loresGrid
-
-                                // Show expanded details below if any lore is expanded
-                                if let expandedID = expandedSkillID,
-                                   let expandedSkill = lores.first(where: { $0.persistentModelID == expandedID }) {
-                                    skillDetailsView(expandedSkill)
-                                }
-                            }
-                            .padding(6)
-                            .background(Color.white)
+                            loresGrid
+                                .padding(6)
+                                .background(Color.white)
                         }
                     }
                     .clipShape(RoundedRectangle(cornerRadius: 8))
@@ -465,17 +441,9 @@ struct CharacterDetailView: View {
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .background(Color.white)
                         } else {
-                            VStack(spacing: 6) {
-                                tonguesGrid
-
-                                // Show expanded details below if any tongue is expanded
-                                if let expandedID = expandedSkillID,
-                                   let expandedSkill = tongues.first(where: { $0.persistentModelID == expandedID }) {
-                                    skillDetailsView(expandedSkill)
-                                }
-                            }
-                            .padding(6)
-                            .background(Color.white)
+                            tonguesGrid
+                                .padding(6)
+                                .background(Color.white)
                         }
                     }
                     .clipShape(RoundedRectangle(cornerRadius: 8))
@@ -880,112 +848,16 @@ struct CharacterDetailView: View {
     // MARK: - Row builders
 
     @ViewBuilder
-    private func statDetailsView(_ stat: Stat) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            // Base value (always shown)
-            VStack(alignment: .leading, spacing: 2) {
-                HStack {
-                    Text("Base")
-                        .font(.caption)
-                    Spacer()
-                    Text("\(stat.value)")
-                        .font(.caption)
-                        .fontWeight(.bold)
-                }
-            }
-
-            // Effective value (only if different from base)
-            if stat.hasModifiers {
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack {
-                        Text("Effective")
-                            .font(.caption)
-                        Spacer()
-                        Text("\(stat.effectiveValue)")
-                            .font(.caption)
-                            .fontWeight(.bold)
-                    }
-
-                    // Future: Show modifier breakdown here
-                    Text("  (modifiers breakdown)")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            Divider()
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Keywords")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                Text(stat.implicitKeywords.joined(separator: ", "))
-                    .font(.caption2)
-            }
-        }
-        .padding(8)
-        .background(Color(.systemGray6))
-        .cornerRadius(6)
-    }
-
-    @ViewBuilder
-    private func skillDetailsView(_ skill: CharacterSkill) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            // Base value (always shown)
-            VStack(alignment: .leading, spacing: 2) {
-                HStack {
-                    Text("Base")
-                        .font(.caption)
-                    Spacer()
-                    Text("\(skill.value)")
-                        .font(.caption)
-                        .fontWeight(.bold)
-                }
-            }
-
-            // Future: Effective value if modifiers exist
-            // (CharacterSkill doesn't have effectiveValue/hasModifiers yet)
-
-            Divider()
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Keywords")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                Text(skill.keywordsForRules.joined(separator: ", "))
-                    .font(.caption2)
-            }
-        }
-        .padding(8)
-        .background(Color(.systemGray6))
-        .cornerRadius(6)
-    }
-
-    @ViewBuilder
     private func goalRollDisclosureRow(_ roll: CharacterGoalRoll) -> some View {
-        VStack(spacing: 0) {
-            // Label row
-            VStack(alignment: .leading, spacing: 1) {
-                Text(roll.name)
-                    .font(.caption)
-                Text("Goal: \(roll.goalValue)")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.vertical, 6)
-            .padding(.horizontal, 8)
-            .background(expandedGoalRollID == roll.persistentModelID ? Color(.systemGray6) : Color.clear)
-            .contentShape(Rectangle())
-            .onTapGesture {
-                if expandedGoalRollID == roll.persistentModelID {
-                    expandedGoalRollID = nil
-                } else {
-                    expandedGoalRollID = roll.persistentModelID
-                }
-            }
+        // Label row
+        VStack(alignment: .leading, spacing: 1) {
+            Text(roll.name)
+                .font(.caption)
+            Text("Goal: \(roll.goalValue)")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
 
-            // Expanded details
+            // Expanded details directly below (not in separate VStack)
             if expandedGoalRollID == roll.persistentModelID {
                 VStack(alignment: .leading, spacing: 6) {
                     // Show calculation breakdown
@@ -1045,13 +917,25 @@ struct CharacterDetailView: View {
                             .foregroundStyle(.secondary)
                         Text(roll.keywordsForRules.joined(separator: ", "))
                             .font(.caption2)
+                            .lineLimit(nil)
                     }
                 }
                 .padding(8)
                 .background(Color(.systemGray6))
                 .cornerRadius(6)
-                .padding(.horizontal, 8)
-                .padding(.bottom, 6)
+                .padding(.top, 6)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 6)
+        .padding(.horizontal, 8)
+        .background(expandedGoalRollID == roll.persistentModelID ? Color(.systemGray6) : Color.clear)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if expandedGoalRollID == roll.persistentModelID {
+                expandedGoalRollID = nil
+            } else {
+                expandedGoalRollID = roll.persistentModelID
             }
         }
     }
@@ -1140,20 +1024,12 @@ struct CharacterDetailView: View {
                 .padding(.horizontal, 8)
                 .background(Color(.systemGray5))
 
-                VStack(spacing: 6) {
-                    HStack(spacing: 0) {
-                        ForEach(Array(bodyAttributes.enumerated()), id: \.element.id) { index, stat in
-                            if index > 0 {
-                                Spacer()
-                            }
-                            verticalStatCell(stat)
+                HStack(spacing: 0) {
+                    ForEach(Array(bodyAttributes.enumerated()), id: \.element.id) { index, stat in
+                        if index > 0 {
+                            Spacer()
                         }
-                    }
-
-                    // Show expanded details below if any body stat is expanded
-                    if let expandedID = expandedStatID,
-                       let expandedStat = bodyAttributes.first(where: { $0.persistentModelID == expandedID }) {
-                        statDetailsView(expandedStat)
+                        verticalStatCell(stat)
                     }
                 }
                 .padding(.horizontal, 12)
@@ -1175,20 +1051,12 @@ struct CharacterDetailView: View {
                 .padding(.horizontal, 8)
                 .background(Color(.systemGray5))
 
-                VStack(spacing: 6) {
-                    HStack(spacing: 0) {
-                        ForEach(Array(mindAttributes.enumerated()), id: \.element.id) { index, stat in
-                            if index > 0 {
-                                Spacer()
-                            }
-                            verticalStatCell(stat)
+                HStack(spacing: 0) {
+                    ForEach(Array(mindAttributes.enumerated()), id: \.element.id) { index, stat in
+                        if index > 0 {
+                            Spacer()
                         }
-                    }
-
-                    // Show expanded details below if any mind stat is expanded
-                    if let expandedID = expandedStatID,
-                       let expandedStat = mindAttributes.first(where: { $0.persistentModelID == expandedID }) {
-                        statDetailsView(expandedStat)
+                        verticalStatCell(stat)
                     }
                 }
                 .padding(.horizontal, 12)
@@ -1240,12 +1108,6 @@ struct CharacterDetailView: View {
                             verticalStatCell(faith)
                         }
                     }
-
-                    // Show expanded details below if any spirit stat is expanded
-                    if let expandedID = expandedStatID,
-                       let expandedStat = spiritAttributes.first(where: { $0.persistentModelID == expandedID }) {
-                        statDetailsView(expandedStat)
-                    }
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
@@ -1267,24 +1129,16 @@ struct CharacterDetailView: View {
                     .padding(.horizontal, 8)
                     .background(Color(.systemGray5))
 
-                    VStack(spacing: 6) {
-                        HStack(spacing: 8) {
-                            if let psi = occultAttributes.first(where: { $0.name == "Psi" }) {
-                                verticalStatCell(psi)
-                            }
-
-                            if let theurgy = occultAttributes.first(where: { $0.name == "Theurgy" }) {
-                                verticalStatCell(theurgy)
-                            }
-
-                            Spacer()
+                    HStack(spacing: 8) {
+                        if let psi = occultAttributes.first(where: { $0.name == "Psi" }) {
+                            verticalStatCell(psi)
                         }
 
-                        // Show expanded details below if any occult stat is expanded
-                        if let expandedID = expandedStatID,
-                           let expandedStat = occultAttributes.first(where: { $0.persistentModelID == expandedID }) {
-                            statDetailsView(expandedStat)
+                        if let theurgy = occultAttributes.first(where: { $0.name == "Theurgy" }) {
+                            verticalStatCell(theurgy)
                         }
+
+                        Spacer()
                     }
                     .padding(6)
                     .background(Color.white)
@@ -1296,21 +1150,115 @@ struct CharacterDetailView: View {
 
     @ViewBuilder
     private func verticalStatCell(_ stat: Stat) -> some View {
-        VStack(spacing: 2) {
-            Text(stat.name)
-                .font(.caption)
-                .multilineTextAlignment(.center)
-                .lineLimit(2)
-                .fixedSize(horizontal: false, vertical: true)
-                .onTapGesture {
-                    if expandedStatID == stat.persistentModelID {
-                        expandedStatID = nil
+        VStack(spacing: 4) {
+            // The stat cell itself
+            VStack(spacing: 2) {
+                Text(stat.name)
+                    .font(.caption)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .onTapGesture {
+                        if expandedStatID == stat.persistentModelID {
+                            expandedStatID = nil
+                        } else {
+                            expandedStatID = stat.persistentModelID
+                        }
+                    }
+
+                HStack(spacing: 3) {
+                    Button {
+                        stat.value -= 1
+                        if stat.value < stat.minimumValue { stat.value = stat.minimumValue }
+                    } label: {
+                        Image(systemName: "minus.circle")
+                            .font(.caption2)
+                    }
+                    .buttonStyle(.plain)
+
+                    // Show "base (effective)" format when they differ
+                    if stat.hasModifiers && stat.value != stat.effectiveValue {
+                        Text("\(stat.value) (\(stat.effectiveValue))")
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .frame(minWidth: 18)
                     } else {
-                        expandedStatID = stat.persistentModelID
+                        Text("\(stat.value)")
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .frame(minWidth: 18)
+                    }
+
+                    Button {
+                        stat.value += 1
+                    } label: {
+                        Image(systemName: "plus.circle")
+                            .font(.caption2)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.vertical, 4)
+            .background(expandedStatID == stat.persistentModelID ? Color(.systemGray6) : Color.clear)
+            .cornerRadius(6)
+
+            // Details appear directly below this stat
+            if expandedStatID == stat.persistentModelID {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text("Base")
+                            .font(.caption2)
+                        Spacer()
+                        Text("\(stat.value)")
+                            .font(.caption2)
+                            .fontWeight(.bold)
+                    }
+
+                    if stat.hasModifiers {
+                        HStack {
+                            Text("Effective")
+                                .font(.caption2)
+                            Spacer()
+                            Text("\(stat.effectiveValue)")
+                                .font(.caption2)
+                                .fontWeight(.bold)
+                        }
+                    }
+
+                    Divider()
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Keywords")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                        Text(stat.implicitKeywords.joined(separator: ", "))
+                            .font(.caption2)
+                            .lineLimit(nil)
                     }
                 }
+                .padding(6)
+                .background(Color(.systemGray6))
+                .cornerRadius(4)
+            }
+        }
+        .frame(maxWidth: .infinity)
+    }
 
-            HStack(spacing: 3) {
+    @ViewBuilder
+    private func compactStatRow(_ stat: Stat) -> some View {
+        VStack(spacing: 4) {
+            // The stat row itself
+            HStack(spacing: 4) {
+                Text(stat.name)
+                    .font(.caption)
+                    .onTapGesture {
+                        if expandedStatID == stat.persistentModelID {
+                            expandedStatID = nil
+                        } else {
+                            expandedStatID = stat.persistentModelID
+                        }
+                    }
+                Spacer()
                 Button {
                     stat.value -= 1
                     if stat.value < stat.minimumValue { stat.value = stat.minimumValue }
@@ -1325,12 +1273,12 @@ struct CharacterDetailView: View {
                     Text("\(stat.value) (\(stat.effectiveValue))")
                         .font(.caption)
                         .fontWeight(.semibold)
-                        .frame(minWidth: 18)
+                        .frame(minWidth: 20)
                 } else {
                     Text("\(stat.value)")
                         .font(.caption)
                         .fontWeight(.semibold)
-                        .frame(minWidth: 18)
+                        .frame(minWidth: 20)
                 }
 
                 Button {
@@ -1341,60 +1289,50 @@ struct CharacterDetailView: View {
                 }
                 .buttonStyle(.plain)
             }
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 4)
-        .background(expandedStatID == stat.persistentModelID ? Color(.systemGray6) : Color.clear)
-        .cornerRadius(6)
-    }
+            .padding(.vertical, 2)
+            .padding(.horizontal, 4)
+            .background(expandedStatID == stat.persistentModelID ? Color(.systemGray6) : Color.clear)
+            .cornerRadius(6)
 
-    @ViewBuilder
-    private func compactStatRow(_ stat: Stat) -> some View {
-        HStack(spacing: 4) {
-            Text(stat.name)
-                .font(.caption)
-                .onTapGesture {
-                    if expandedStatID == stat.persistentModelID {
-                        expandedStatID = nil
-                    } else {
-                        expandedStatID = stat.persistentModelID
+            // Details appear directly below this stat
+            if expandedStatID == stat.persistentModelID {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text("Base")
+                            .font(.caption2)
+                        Spacer()
+                        Text("\(stat.value)")
+                            .font(.caption2)
+                            .fontWeight(.bold)
+                    }
+
+                    if stat.hasModifiers {
+                        HStack {
+                            Text("Effective")
+                                .font(.caption2)
+                            Spacer()
+                            Text("\(stat.effectiveValue)")
+                                .font(.caption2)
+                                .fontWeight(.bold)
+                        }
+                    }
+
+                    Divider()
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Keywords")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                        Text(stat.implicitKeywords.joined(separator: ", "))
+                            .font(.caption2)
+                            .lineLimit(nil)
                     }
                 }
-            Spacer()
-            Button {
-                stat.value -= 1
-                if stat.value < stat.minimumValue { stat.value = stat.minimumValue }
-            } label: {
-                Image(systemName: "minus.circle")
-                    .font(.caption2)
+                .padding(6)
+                .background(Color(.systemGray6))
+                .cornerRadius(4)
             }
-            .buttonStyle(.plain)
-
-            // Show "base (effective)" format when they differ
-            if stat.hasModifiers && stat.value != stat.effectiveValue {
-                Text("\(stat.value) (\(stat.effectiveValue))")
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                    .frame(minWidth: 20)
-            } else {
-                Text("\(stat.value)")
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                    .frame(minWidth: 20)
-            }
-
-            Button {
-                stat.value += 1
-            } label: {
-                Image(systemName: "plus.circle")
-                    .font(.caption2)
-            }
-            .buttonStyle(.plain)
         }
-        .padding(.vertical, 2)
-        .padding(.horizontal, 4)
-        .background(expandedStatID == stat.persistentModelID ? Color(.systemGray6) : Color.clear)
-        .cornerRadius(6)
     }
 
     @ViewBuilder
@@ -1435,49 +1373,82 @@ struct CharacterDetailView: View {
 
     @ViewBuilder
     private func compactSkillRow(_ skill: CharacterSkill) -> some View {
-        HStack(spacing: 4) {
-            Text(skill.effectiveName)
-                .font(.caption)
-                .lineLimit(1)
-                .onTapGesture {
-                    if expandedSkillID == skill.persistentModelID {
-                        expandedSkillID = nil
-                    } else {
-                        expandedSkillID = skill.persistentModelID
+        VStack(spacing: 4) {
+            // The skill row itself
+            HStack(spacing: 4) {
+                Text(skill.effectiveName)
+                    .font(.caption)
+                    .lineLimit(1)
+                    .onTapGesture {
+                        if expandedSkillID == skill.persistentModelID {
+                            expandedSkillID = nil
+                        } else {
+                            expandedSkillID = skill.persistentModelID
+                        }
+                    }
+                Spacer()
+                Button {
+                    skill.value -= 1
+                    if skill.value < skill.minimumValue { skill.value = skill.minimumValue }
+                } label: {
+                    Image(systemName: "minus.circle")
+                        .font(.caption2)
+                }
+                .buttonStyle(.plain)
+
+                Text("\(skill.value)")
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .frame(minWidth: 20)
+
+                Button {
+                    skill.value += 1
+                } label: {
+                    Image(systemName: "plus.circle")
+                        .font(.caption2)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.vertical, 2)
+            .padding(.horizontal, 4)
+            .background(expandedSkillID == skill.persistentModelID ? Color(.systemGray6) : Color.clear)
+            .cornerRadius(6)
+            .contextMenu {
+                Button(role: .destructive) {
+                    modelContext.delete(skill)
+                } label: {
+                    Label("Delete", systemImage: "trash")
+                }
+            }
+
+            // Details appear directly below this skill
+            if expandedSkillID == skill.persistentModelID {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text("Base")
+                            .font(.caption2)
+                        Spacer()
+                        Text("\(skill.value)")
+                            .font(.caption2)
+                            .fontWeight(.bold)
+                    }
+
+                    // Future: Effective value if modifiers exist
+
+                    Divider()
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Keywords")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                        Text(skill.keywordsForRules.joined(separator: ", "))
+                            .font(.caption2)
+                            .lineLimit(nil)
                     }
                 }
-            Spacer()
-            Button {
-                skill.value -= 1
-                if skill.value < skill.minimumValue { skill.value = skill.minimumValue }
-            } label: {
-                Image(systemName: "minus.circle")
-                    .font(.caption2)
-            }
-            .buttonStyle(.plain)
-
-            Text("\(skill.value)")
-                .font(.caption)
-                .fontWeight(.semibold)
-                .frame(minWidth: 20)
-
-            Button {
-                skill.value += 1
-            } label: {
-                Image(systemName: "plus.circle")
-                    .font(.caption2)
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(.vertical, 2)
-        .padding(.horizontal, 4)
-        .background(expandedSkillID == skill.persistentModelID ? Color(.systemGray6) : Color.clear)
-        .cornerRadius(6)
-        .contextMenu {
-            Button(role: .destructive) {
-                modelContext.delete(skill)
-            } label: {
-                Label("Delete", systemImage: "trash")
+                .padding(6)
+                .background(Color(.systemGray6))
+                .cornerRadius(4)
             }
         }
     }
