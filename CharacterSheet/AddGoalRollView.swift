@@ -2,6 +2,8 @@ import SwiftUI
 import SwiftData
 
 struct AddGoalRollView: View {
+    @Environment(\.modelContext) private var modelContext
+
     var character: RPGCharacter
     @Binding var isPresented: Bool
     var category: GoalRollCategory?
@@ -210,6 +212,9 @@ struct AddGoalRollView: View {
         roll.category = category
         roll.displayOrder = maxOrder + 1
         character.goalRolls.append(roll)
+
+        // Insert into model context to ensure proper persistence
+        modelContext.insert(roll)
 
         isPresented = false
     }
