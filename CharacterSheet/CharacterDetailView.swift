@@ -1131,7 +1131,7 @@ struct CharacterDetailView: View {
                     .frame(width: 50, alignment: .leading)
 
                 VStack(spacing: 6) {
-                    // Row 1: Passion, Extrovert, Faith
+                    // Row 1: Passion, Extrovert, Ego
                     HStack(spacing: 8) {
                         if let passion = spiritAttributes.first(where: { $0.name == "Passion" }) {
                             verticalStatCell(passion)
@@ -1139,12 +1139,12 @@ struct CharacterDetailView: View {
                         if let extrovert = spiritAttributes.first(where: { $0.name == "Extrovert" }) {
                             verticalStatCell(extrovert)
                         }
-                        if let faith = spiritAttributes.first(where: { $0.name == "Faith" }) {
-                            verticalStatCell(faith)
+                        if let ego = spiritAttributes.first(where: { $0.name == "Ego" }) {
+                            verticalStatCell(ego)
                         }
                     }
 
-                    // Row 2: Calm, Introvert, Ego
+                    // Row 2: Calm, Introvert, Faith
                     HStack(spacing: 8) {
                         if let calm = spiritAttributes.first(where: { $0.name == "Calm" }) {
                             verticalStatCell(calm)
@@ -1152,8 +1152,8 @@ struct CharacterDetailView: View {
                         if let introvert = spiritAttributes.first(where: { $0.name == "Introvert" }) {
                             verticalStatCell(introvert)
                         }
-                        if let ego = spiritAttributes.first(where: { $0.name == "Ego" }) {
-                            verticalStatCell(ego)
+                        if let faith = spiritAttributes.first(where: { $0.name == "Faith" }) {
+                            verticalStatCell(faith)
                         }
                     }
                 }
