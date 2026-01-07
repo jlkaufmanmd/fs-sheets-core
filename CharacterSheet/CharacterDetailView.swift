@@ -843,139 +843,6 @@ struct CharacterDetailView: View {
     // MARK: - Row builders
 
     @ViewBuilder
-    private func statDisclosureRow(_ stat: Stat) -> some View {
-        DisclosureGroup {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("Base Value")
-                    Spacer()
-                    Text("\(stat.value)")
-                        .fontWeight(.medium)
-                }
-
-                HStack {
-                    Text("Effective Value")
-                    Spacer()
-                    Text("\(stat.value)")
-                        .fontWeight(.medium)
-                        .foregroundStyle(.secondary)
-                }
-
-                Divider()
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Keywords")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                    Text(stat.implicitKeywords.joined(separator: ", "))
-                        .font(.caption)
-                }
-            }
-            .padding(.vertical, 4)
-        } label: {
-            HStack {
-                Text(stat.name)
-
-                Spacer()
-
-                Button {
-                    stat.value -= 1
-                    if stat.value < stat.minimumValue { stat.value = stat.minimumValue }
-                } label: {
-                    Image(systemName: "minus.circle")
-                }
-                .buttonStyle(.plain)
-
-                Text("\(stat.value)")
-                    .frame(width: 44)
-                    .font(.headline)
-
-                Button {
-                    stat.value += 1
-                } label: {
-                    Image(systemName: "plus.circle")
-                }
-                .buttonStyle(.plain)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func skillDisclosureRow(_ skill: CharacterSkill) -> some View {
-        DisclosureGroup {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("Base Value")
-                    Spacer()
-                    Text("\(skill.value)")
-                        .fontWeight(.medium)
-                }
-
-                HStack {
-                    Text("Effective Value")
-                    Spacer()
-                    Text("\(skill.value)")
-                        .fontWeight(.medium)
-                        .foregroundStyle(.secondary)
-                }
-
-                Divider()
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Keywords")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                    Text(skill.keywordsForRules.joined(separator: ", "))
-                        .font(.caption)
-                }
-            }
-            .padding(.vertical, 4)
-        } label: {
-            HStack {
-                Text(skill.effectiveName)
-
-                Spacer()
-
-                Button {
-                    skill.value -= 1
-                    if skill.value < skill.minimumValue { skill.value = skill.minimumValue }
-                } label: {
-                    Image(systemName: "minus.circle")
-                }
-                .buttonStyle(.plain)
-
-                ZStack {
-                    if focusedSkillID == skill.persistentModelID {
-                        TextField("", value: Binding(
-                            get: { skill.value },
-                            set: { newVal in skill.value = max(newVal, skill.minimumValue) }
-                        ), format: .number)
-                            .frame(width: 44)
-                            .multilineTextAlignment(.center)
-                            .keyboardType(.numberPad)
-                            .focused($focusedSkillID, equals: skill.persistentModelID)
-                    } else {
-                        Text("\(skill.value)")
-                            .frame(width: 44)
-                            .font(.headline)
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                focusedSkillID = skill.persistentModelID
-                            }
-                    }
-                }
-
-                Button {
-                    skill.value += 1
-                } label: {
-                    Image(systemName: "plus.circle")
-                }
-                .buttonStyle(.plain)
-            }
-        }
-    }
-
-    @ViewBuilder
     private func goalRollDisclosureRow(_ roll: CharacterGoalRoll) -> some View {
         DisclosureGroup {
             VStack(alignment: .leading, spacing: 6) {
@@ -1260,14 +1127,145 @@ struct CharacterDetailView: View {
 
     @ViewBuilder
     private func verticalStatCell(_ stat: Stat) -> some View {
-        VStack(spacing: 2) {
-            Text(stat.name)
-                .font(.caption)
-                .multilineTextAlignment(.center)
-                .lineLimit(2)
-                .fixedSize(horizontal: false, vertical: true)
+        DisclosureGroup {
+            VStack(alignment: .leading, spacing: 6) {
+                // Base value (always shown)
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack {
+                        Text("Base")
+                            .font(.caption)
+                        Spacer()
+                        Text("\(stat.value)")
+                            .font(.caption)
+                            .fontWeight(.bold)
+                    }
+                }
 
-            HStack(spacing: 3) {
+                // Effective value (only if different from base)
+                if stat.hasModifiers {
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack {
+                            Text("Effective")
+                                .font(.caption)
+                            Spacer()
+                            Text("\(stat.effectiveValue)")
+                                .font(.caption)
+                                .fontWeight(.bold)
+                        }
+
+                        // Future: Show modifier breakdown here
+                        Text("  (modifiers breakdown)")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Divider()
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Keywords")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    Text(stat.implicitKeywords.joined(separator: ", "))
+                        .font(.caption2)
+                }
+            }
+            .padding(.vertical, 2)
+        } label: {
+            VStack(spacing: 2) {
+                Text(stat.name)
+                    .font(.caption)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                HStack(spacing: 3) {
+                    Button {
+                        stat.value -= 1
+                        if stat.value < stat.minimumValue { stat.value = stat.minimumValue }
+                    } label: {
+                        Image(systemName: "minus.circle")
+                            .font(.caption2)
+                    }
+                    .buttonStyle(.plain)
+
+                    // Show "base (effective)" format when they differ
+                    if stat.hasModifiers && stat.value != stat.effectiveValue {
+                        Text("\(stat.value) (\(stat.effectiveValue))")
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .frame(minWidth: 18)
+                    } else {
+                        Text("\(stat.value)")
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .frame(minWidth: 18)
+                    }
+
+                    Button {
+                        stat.value += 1
+                    } label: {
+                        Image(systemName: "plus.circle")
+                            .font(.caption2)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .frame(maxWidth: .infinity)
+        }
+    }
+
+    @ViewBuilder
+    private func compactStatRow(_ stat: Stat) -> some View {
+        DisclosureGroup {
+            VStack(alignment: .leading, spacing: 6) {
+                // Base value (always shown)
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack {
+                        Text("Base")
+                            .font(.caption)
+                        Spacer()
+                        Text("\(stat.value)")
+                            .font(.caption)
+                            .fontWeight(.bold)
+                    }
+                }
+
+                // Effective value (only if different from base)
+                if stat.hasModifiers {
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack {
+                            Text("Effective")
+                                .font(.caption)
+                            Spacer()
+                            Text("\(stat.effectiveValue)")
+                                .font(.caption)
+                                .fontWeight(.bold)
+                        }
+
+                        // Future: Show modifier breakdown here
+                        Text("  (modifiers breakdown)")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Divider()
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Keywords")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    Text(stat.implicitKeywords.joined(separator: ", "))
+                        .font(.caption2)
+                }
+            }
+            .padding(.vertical, 2)
+        } label: {
+            HStack(spacing: 4) {
+                Text(stat.name)
+                    .font(.caption)
+                Spacer()
                 Button {
                     stat.value -= 1
                     if stat.value < stat.minimumValue { stat.value = stat.minimumValue }
@@ -1277,10 +1275,18 @@ struct CharacterDetailView: View {
                 }
                 .buttonStyle(.plain)
 
-                Text("\(stat.value)")
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                    .frame(minWidth: 18)
+                // Show "base (effective)" format when they differ
+                if stat.hasModifiers && stat.value != stat.effectiveValue {
+                    Text("\(stat.value) (\(stat.effectiveValue))")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .frame(minWidth: 20)
+                } else {
+                    Text("\(stat.value)")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .frame(minWidth: 20)
+                }
 
                 Button {
                     stat.value += 1
@@ -1290,37 +1296,6 @@ struct CharacterDetailView: View {
                 }
                 .buttonStyle(.plain)
             }
-        }
-        .frame(maxWidth: .infinity)
-    }
-
-    @ViewBuilder
-    private func compactStatRow(_ stat: Stat) -> some View {
-        HStack(spacing: 4) {
-            Text(stat.name)
-                .font(.caption)
-            Spacer()
-            Button {
-                stat.value -= 1
-                if stat.value < stat.minimumValue { stat.value = stat.minimumValue }
-            } label: {
-                Image(systemName: "minus.circle")
-                    .font(.caption2)
-            }
-            .buttonStyle(.plain)
-
-            Text("\(stat.value)")
-                .font(.caption)
-                .fontWeight(.semibold)
-                .frame(minWidth: 20)
-
-            Button {
-                stat.value += 1
-            } label: {
-                Image(systemName: "plus.circle")
-                    .font(.caption2)
-            }
-            .buttonStyle(.plain)
         }
     }
 
@@ -1362,32 +1337,62 @@ struct CharacterDetailView: View {
 
     @ViewBuilder
     private func compactSkillRow(_ skill: CharacterSkill) -> some View {
-        HStack(spacing: 4) {
-            Text(skill.effectiveName)
-                .font(.caption)
-                .lineLimit(1)
-            Spacer()
-            Button {
-                skill.value -= 1
-                if skill.value < skill.minimumValue { skill.value = skill.minimumValue }
-            } label: {
-                Image(systemName: "minus.circle")
-                    .font(.caption2)
-            }
-            .buttonStyle(.plain)
+        DisclosureGroup {
+            VStack(alignment: .leading, spacing: 6) {
+                // Base value (always shown)
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack {
+                        Text("Base")
+                            .font(.caption)
+                        Spacer()
+                        Text("\(skill.value)")
+                            .font(.caption)
+                            .fontWeight(.bold)
+                    }
+                }
 
-            Text("\(skill.value)")
-                .font(.caption)
-                .fontWeight(.semibold)
-                .frame(minWidth: 20)
+                // Future: Effective value if modifiers exist
+                // (CharacterSkill doesn't have effectiveValue/hasModifiers yet)
 
-            Button {
-                skill.value += 1
-            } label: {
-                Image(systemName: "plus.circle")
-                    .font(.caption2)
+                Divider()
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Keywords")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    Text(skill.keywordsForRules.joined(separator: ", "))
+                        .font(.caption2)
+                }
             }
-            .buttonStyle(.plain)
+            .padding(.vertical, 2)
+        } label: {
+            HStack(spacing: 4) {
+                Text(skill.effectiveName)
+                    .font(.caption)
+                    .lineLimit(1)
+                Spacer()
+                Button {
+                    skill.value -= 1
+                    if skill.value < skill.minimumValue { skill.value = skill.minimumValue }
+                } label: {
+                    Image(systemName: "minus.circle")
+                        .font(.caption2)
+                }
+                .buttonStyle(.plain)
+
+                Text("\(skill.value)")
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .frame(minWidth: 20)
+
+                Button {
+                    skill.value += 1
+                } label: {
+                    Image(systemName: "plus.circle")
+                        .font(.caption2)
+                }
+                .buttonStyle(.plain)
+            }
         }
         .contextMenu {
             Button(role: .destructive) {

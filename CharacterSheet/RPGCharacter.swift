@@ -35,7 +35,7 @@ final class RPGCharacter {
 @Model
 final class Stat: KeywordProvider {
     var name: String
-    var value: Int
+    var value: Int  // Base value
 
     var statType: String // "attribute" or "skill"
     var category: String // "Body", "Mind", "Natural Skills", etc.
@@ -43,6 +43,17 @@ final class Stat: KeywordProvider {
     var isDeletable: Bool
 
     var character: RPGCharacter?
+
+    // TODO: Add modifier system - for now, effective value equals base value
+    var effectiveValue: Int {
+        // Future: calculate base + modifiers
+        return value
+    }
+
+    var hasModifiers: Bool {
+        // Future: check if any modifiers exist
+        return false
+    }
 
     init(
         name: String,

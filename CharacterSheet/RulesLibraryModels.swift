@@ -400,7 +400,7 @@ final class CharacterCombatMetric: KeywordProvider {
         switch template.baseValueFormula {
         case "5 + Endurance":
             let endurance = character.stats.first { $0.name == "Endurance" }?.value ?? 0
-            return [("vital", 5), ("Endurance", endurance)]
+            return [("Vital", 5), ("Endurance", endurance)]
 
         case "Strength / 3":
             let strength = character.stats.first { $0.name == "Strength" }?.value ?? 0
