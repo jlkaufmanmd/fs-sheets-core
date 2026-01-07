@@ -1,7 +1,7 @@
 import SwiftUI
 import SwiftData
 
-struct CharacterDetailView: View {
+struct CharacterDetailView_Layout1: View {
     @Environment(\.modelContext) private var modelContext
     @Bindable var character: RPGCharacter
 
