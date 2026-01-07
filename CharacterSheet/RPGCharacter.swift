@@ -78,7 +78,7 @@ final class Stat: KeywordProvider {
         let catKey  = KeywordUtil.categoryToKeyword(category)
         let nameKey = KeywordUtil.normalize(name)
 
-        var keys: [String] = [
+        let keys: [String] = [
             nameKey,
             "stat",
             typeKey,

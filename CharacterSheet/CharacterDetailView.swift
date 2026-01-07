@@ -83,7 +83,7 @@ struct CharacterDetailView: View {
     }
 
     private var goalRolls: [CharacterGoalRoll] {
-        character.goalRolls.sorted { $0.effectiveName.localizedCaseInsensitiveCompare($1.effectiveName) == .orderedAscending }
+        character.goalRolls.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
 
     private var physicalCombatMetrics: [CharacterCombatMetric] {
