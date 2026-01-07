@@ -664,9 +664,31 @@ struct CharacterDetailView: View {
                             .foregroundStyle(.primary)
                         Spacer()
 
-                        // Category settings (placeholder for now)
-                        Button {
-                            // TODO: Category management
+                        // Category settings
+                        Menu {
+                            Button {
+                                showingCategorySettings = category
+                                renameCategoryName = category.name
+                                showingRenameCategoryAlert = true
+                            } label: {
+                                Label("Rename Category", systemImage: "pencil")
+                            }
+
+                            Button {
+                                showingNewGoalRollCategory = true
+                            } label: {
+                                Label("New Category", systemImage: "plus")
+                            }
+
+                            if canDeleteCategory {
+                                Divider()
+                                Button(role: .destructive) {
+                                    categoryToDelete = category
+                                    showingDeleteCategoryAlert = true
+                                } label: {
+                                    Label("Delete Category", systemImage: "trash")
+                                }
+                            }
                         } label: {
                             Image(systemName: "gearshape")
                                 .foregroundStyle(.secondary)
@@ -700,6 +722,64 @@ struct CharacterDetailView: View {
             }
         } message: {
             Text("A character named \"\(character.name)\" already exists. Please choose a different name.")
+        }
+        .alert("Rename Category", isPresented: $showingRenameCategoryAlert) {
+            TextField("Category Name", text: $renameCategoryName)
+                .textInputAutocapitalization(.words)
+            Button("Cancel", role: .cancel) {
+                renameCategoryName = ""
+                showingCategorySettings = nil
+            }
+            Button("Rename") {
+                if let category = showingCategorySettings {
+                    renameCategory(category, to: renameCategoryName)
+                }
+            }
+        } message: {
+            Text("Enter a new name for the category")
+        }
+        .alert("New Category", isPresented: $showingNewGoalRollCategory) {
+            TextField("Category Name", text: $newGoalRollCategoryName)
+                .textInputAutocapitalization(.words)
+            Button("Cancel", role: .cancel) {
+                newGoalRollCategoryName = ""
+            }
+            Button("Create") {
+                createNewCategory()
+            }
+        } message: {
+            Text("Enter a name for the new category")
+        }
+        .alert("Delete Category?", isPresented: $showingDeleteCategoryAlert) {
+            if let category = categoryToDelete, !goalRollsForCategory(category).isEmpty {
+                Button("Delete Rolls & Category", role: .destructive) {
+                    deleteCategory(category, deleteRolls: true)
+                }
+                Button("Move Rolls to...") {
+                    deleteCategoryAction = .migrateRolls
+                }
+                Button("Cancel", role: .cancel) {
+                    categoryToDelete = nil
+                }
+            } else {
+                Button("Delete", role: .destructive) {
+                    if let category = categoryToDelete {
+                        deleteCategory(category, deleteRolls: true)
+                    }
+                }
+                Button("Cancel", role: .cancel) {
+                    categoryToDelete = nil
+                }
+            }
+        } message: {
+            if let category = categoryToDelete {
+                let rollCount = goalRollsForCategory(category).count
+                if rollCount > 0 {
+                    Text("This category contains \(rollCount) goal roll(s). What would you like to do?")
+                } else {
+                    Text("Delete the \"\(category.name)\" category?")
+                }
+            }
         }
         .onAppear {
             ensureLibraryExists()
@@ -1151,5 +1231,49 @@ struct CharacterDetailView: View {
         for roll in character.goalRolls where roll.category == nil {
             roll.category = firstCategory
         }
+    }
+
+    // MARK: - Category Management
+
+    private func renameCategory(_ category: GoalRollCategory, to newName: String) {
+        let trimmed = newName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        category.name = trimmed
+        showingCategorySettings = nil
+        renameCategoryName = ""
+    }
+
+    private func createNewCategory() {
+        let trimmed = newGoalRollCategoryName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+
+        let maxOrder = character.goalRollCategories.map { $0.displayOrder }.max() ?? 0
+        let newCategory = GoalRollCategory(name: trimmed, displayOrder: maxOrder + 1)
+        newCategory.character = character
+        character.goalRollCategories.append(newCategory)
+        modelContext.insert(newCategory)
+
+        newGoalRollCategoryName = ""
+    }
+
+    private func deleteCategory(_ category: GoalRollCategory, deleteRolls: Bool) {
+        if deleteRolls {
+            // Delete all goal rolls in this category
+            let rolls = goalRollsForCategory(category)
+            for roll in rolls {
+                modelContext.delete(roll)
+            }
+        } else {
+            // This case will be handled when we implement migration
+            // For now, just delete rolls
+            let rolls = goalRollsForCategory(category)
+            for roll in rolls {
+                modelContext.delete(roll)
+            }
+        }
+
+        // Delete the category
+        modelContext.delete(category)
+        categoryToDelete = nil
     }
 }

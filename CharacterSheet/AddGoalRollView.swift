@@ -122,33 +122,17 @@ struct AddGoalRollView: View {
                             }
                         }
 
-                        // Skill Picker with hierarchical menu
-                        HStack {
-                            Text("Skill")
-                            Spacer()
-                            Menu {
-                                // Natural Skills submenu
-                                Menu("Natural Skills") {
-                                    ForEach(naturalSkills) { skill in
-                                        Button(skill.name) {
-                                            selectedNaturalSkillID = skill.persistentModelID
-                                            selectedLearnedSkillID = nil
-                                        }
-                                    }
-                                }
-                                
-                                // Learned Skills, Lores, Tongues submenus
-                                ForEach(learnedSkillsByCategory, id: \.0) { (category, skills) in
-                                    Menu(category) {
-                                        ForEach(skills) { skill in
-                                            Button(skill.effectiveName) {
-                                                selectedLearnedSkillID = skill.persistentModelID
-                                                selectedNaturalSkillID = nil
-                                            }
-                                        }
-                                    }
-                                }
-                            } label: {
+                        // Skill selection with NavigationLink
+                        NavigationLink {
+                            GoalRollSkillSelectionView(
+                                character: character,
+                                selectedNaturalSkillID: $selectedNaturalSkillID,
+                                selectedLearnedSkillID: $selectedLearnedSkillID
+                            )
+                        } label: {
+                            HStack {
+                                Text("Skill")
+                                Spacer()
                                 Text(selectedSkill?.name ?? "Select...")
                                     .foregroundStyle(selectedSkill == nil ? .secondary : .primary)
                             }
@@ -214,27 +198,52 @@ struct AddGoalRollView: View {
                 return
             }
 
-            let template = GoalRollTemplate(
-                name: trimmed,
-                templateDescription: description,
-                baseModifier: baseModifier,
-                userKeywords: keywords,
-                defaultAttributeName: selectedAttr.name,
-                defaultAttributeCategory: selectedAttr.category,
-                defaultSkillMode: skillMode,
-                defaultNaturalSkillName: natSkillName,
-                defaultLearnedSkillTemplate: learnedTemplate
-            )
+            // Check if template with this name already exists
+            let existingTemplate = library.goalRollTemplates.first { $0.name == trimmed }
 
-            library.goalRollTemplates.append(template)
-            
-            let roll = CharacterGoalRoll(
-                template: template,
-                attributeStat: nil,
-                naturalSkillStat: nil,
-                characterSkill: nil
-            )
+            let template: GoalRollTemplate
+            if let existing = existingTemplate {
+                // Reuse existing template
+                template = existing
+            } else {
+                // Create new template
+                template = GoalRollTemplate(
+                    name: trimmed,
+                    templateDescription: description,
+                    baseModifier: baseModifier,
+                    userKeywords: keywords,
+                    defaultAttributeName: selectedAttr.name,
+                    defaultAttributeCategory: selectedAttr.category,
+                    defaultSkillMode: skillMode,
+                    defaultNaturalSkillName: natSkillName,
+                    defaultLearnedSkillTemplate: learnedTemplate
+                )
+                library.goalRollTemplates.append(template)
+            }
+
+            // Create goal roll and branch it with user's selections
+            let roll = CharacterGoalRoll(template: template)
             roll.category = category
+
+            // Branch the roll to override with user's specific selections
+            roll.isBranched = true
+            roll.branchedDate = Date()
+            roll.overrideName = trimmed
+            roll.overrideDescription = description
+            roll.overrideBaseModifier = baseModifier
+            roll.overrideUserKeywords = keywords
+            roll.attributeStat = selectedAttr
+
+            if skillMode == .natural, let natID = selectedNaturalSkillID,
+               let natSkill = naturalSkills.first(where: { $0.persistentModelID == natID }) {
+                roll.naturalSkillStat = natSkill
+                roll.characterSkill = nil
+            } else if skillMode == .learned, let learnedID = selectedLearnedSkillID,
+                      let learnedSkill = character.learnedSkills.first(where: { $0.persistentModelID == learnedID }) {
+                roll.characterSkill = learnedSkill
+                roll.naturalSkillStat = nil
+            }
+
             character.goalRolls.append(roll)
             isPresented = false
 
@@ -258,5 +267,132 @@ struct AddGoalRollView: View {
             character.goalRolls.append(roll)
             isPresented = false
         }
+    }
+}
+
+// MARK: - Skill Selection View for Goal Rolls
+
+struct GoalRollSkillSelectionView: View {
+    @Environment(\.dismiss) private var dismiss
+    var character: RPGCharacter
+    @Binding var selectedNaturalSkillID: PersistentIdentifier?
+    @Binding var selectedLearnedSkillID: PersistentIdentifier?
+
+    private var naturalSkills: [Stat] {
+        character.stats
+            .filter { $0.statType == "skill" && $0.category == "Natural Skills" }
+            .sorted { $0.displayOrder < $1.displayOrder }
+    }
+
+    private var learnedSkills: [CharacterSkill] {
+        character.learnedSkills
+            .filter { $0.effectiveCategory == "Learned Skills" }
+            .sorted { $0.effectiveName.localizedCaseInsensitiveCompare($1.effectiveName) == .orderedAscending }
+    }
+
+    private var loreSkills: [CharacterSkill] {
+        character.learnedSkills
+            .filter { $0.effectiveCategory == "Lores" }
+            .sorted { $0.effectiveName.localizedCaseInsensitiveCompare($1.effectiveName) == .orderedAscending }
+    }
+
+    private var tongues: [CharacterSkill] {
+        character.learnedSkills
+            .filter { $0.effectiveCategory == "Tongues" }
+            .sorted { $0.effectiveName.localizedCaseInsensitiveCompare($1.effectiveName) == .orderedAscending }
+    }
+
+    var body: some View {
+        Form {
+            if !naturalSkills.isEmpty {
+                Section("Natural Skills") {
+                    ForEach(naturalSkills) { skill in
+                        Button {
+                            selectedNaturalSkillID = skill.persistentModelID
+                            selectedLearnedSkillID = nil
+                            dismiss()
+                        } label: {
+                            HStack {
+                                Text(skill.name)
+                                    .foregroundStyle(.primary)
+                                Spacer()
+                                if selectedNaturalSkillID == skill.persistentModelID {
+                                    Image(systemName: "checkmark")
+                                        .foregroundStyle(.blue)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if !learnedSkills.isEmpty {
+                Section("Learned Skills") {
+                    ForEach(learnedSkills) { skill in
+                        Button {
+                            selectedLearnedSkillID = skill.persistentModelID
+                            selectedNaturalSkillID = nil
+                            dismiss()
+                        } label: {
+                            HStack {
+                                Text(skill.effectiveName)
+                                    .foregroundStyle(.primary)
+                                Spacer()
+                                if selectedLearnedSkillID == skill.persistentModelID {
+                                    Image(systemName: "checkmark")
+                                        .foregroundStyle(.blue)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if !loreSkills.isEmpty {
+                Section("Lore Skills") {
+                    ForEach(loreSkills) { skill in
+                        Button {
+                            selectedLearnedSkillID = skill.persistentModelID
+                            selectedNaturalSkillID = nil
+                            dismiss()
+                        } label: {
+                            HStack {
+                                Text(skill.effectiveName)
+                                    .foregroundStyle(.primary)
+                                Spacer()
+                                if selectedLearnedSkillID == skill.persistentModelID {
+                                    Image(systemName: "checkmark")
+                                        .foregroundStyle(.blue)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if !tongues.isEmpty {
+                Section("Tongues") {
+                    ForEach(tongues) { skill in
+                        Button {
+                            selectedLearnedSkillID = skill.persistentModelID
+                            selectedNaturalSkillID = nil
+                            dismiss()
+                        } label: {
+                            HStack {
+                                Text(skill.effectiveName)
+                                    .foregroundStyle(.primary)
+                                Spacer()
+                                if selectedLearnedSkillID == skill.persistentModelID {
+                                    Image(systemName: "checkmark")
+                                        .foregroundStyle(.blue)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        .navigationTitle("Select Skill")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
