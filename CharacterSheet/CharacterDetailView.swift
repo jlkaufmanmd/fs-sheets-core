@@ -219,26 +219,24 @@ struct CharacterDetailView: View {
                 }
             }
 
-            // ATTRIBUTES
             Text("ATTRIBUTES")
                 .font(.subheadline)
                 .fontWeight(.bold)
                 .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.top, 8)
+                .padding(.top, 12)
+                .padding(.bottom, 6)
 
-            Section {
-                compactAttributesGrid
-            }
+            compactAttributesGrid
+                .padding(.horizontal, 16)
 
-            // SKILLS
             Text("SKILLS")
                 .font(.subheadline)
                 .fontWeight(.bold)
                 .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.top, 8)
+                .padding(.top, 12)
+                .padding(.bottom, 6)
 
-            Section {
-                VStack(spacing: 6) {
+            VStack(spacing: 6) {
                     // Natural Skills
                     VStack(alignment: .leading, spacing: 0) {
                         HStack {
@@ -445,16 +443,16 @@ struct CharacterDetailView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                 }
             }
+            .padding(.horizontal, 16)
 
-            // GOAL ROLLS
             Text("GOAL ROLLS")
                 .font(.subheadline)
                 .fontWeight(.bold)
                 .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.top, 8)
+                .padding(.top, 12)
+                .padding(.bottom, 6)
 
-            Section {
-                VStack(spacing: 6) {
+            VStack(spacing: 6) {
                     ForEach(goalRollCategories) { category in
                         VStack(alignment: .leading, spacing: 0) {
                             HStack {
@@ -550,13 +548,14 @@ struct CharacterDetailView: View {
                     }
                 }
             }
+            .padding(.horizontal, 16)
 
-            // DASHBOARD
             Text("DASHBOARD")
                 .font(.subheadline)
                 .fontWeight(.bold)
                 .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.top, 8)
+                .padding(.top, 12)
+                .padding(.bottom, 6)
 
             // Physical Combat
             Section {
