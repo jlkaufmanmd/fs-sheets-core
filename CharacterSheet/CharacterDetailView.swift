@@ -193,7 +193,7 @@ struct CharacterDetailView: View {
 
     var body: some View {
         Form {
-            Section("Character") {
+            Section {
                 TextField("Name", text: $character.name)
                     .font(.headline)
                     .focused($isNameFieldFocused)
@@ -205,7 +205,7 @@ struct CharacterDetailView: View {
                             validateName()
                         }
                     }
-                
+
                 ZStack(alignment: .topLeading) {
                     if character.characterDescription.isEmpty {
                         Text("Description (optional)...")
@@ -231,7 +231,6 @@ struct CharacterDetailView: View {
                 }
             }
             .listRowBackground(Color.clear)
-            .listRowInsets(EdgeInsets(top: 2, leading: 16, bottom: 2, trailing: 16))
 
             Section {
                 VStack(spacing: 6) {
@@ -447,7 +446,6 @@ struct CharacterDetailView: View {
                 }
             }
             .listRowBackground(Color.clear)
-            .listRowInsets(EdgeInsets(top: 2, leading: 16, bottom: 2, trailing: 16))
 
             Section {
                 VStack(spacing: 6) {
@@ -459,96 +457,106 @@ struct CharacterDetailView: View {
                 }
             }
             .listRowBackground(Color.clear)
-            .listRowInsets(EdgeInsets(top: 2, leading: 16, bottom: 0, trailing: 16))
 
             // Goal Roll Categories
-            ForEach(goalRollCategories) { category in
-                Section {
-                    let rolls = goalRollsForCategory(category)
-                    if rolls.isEmpty {
-                        Text("No goal rolls yet.")
-                            .foregroundStyle(.secondary)
-                            .font(.caption)
-                    } else {
-                        ForEach(rolls) { roll in
-                            goalRollDisclosureRow(roll)
-                                .contextMenu {
+            Section {
+                VStack(spacing: 6) {
+                    ForEach(goalRollCategories) { category in
+                        VStack(alignment: .leading, spacing: 0) {
+                            HStack {
+                                Text(category.name)
+                                    .font(.caption)
+                                    .fontWeight(.semibold)
+                                    .foregroundStyle(.primary)
+                                Spacer()
+
+                                // Category settings
+                                Menu {
                                     Button {
-                                        rollToCopy = roll
-                                        showingCopyPicker = true
+                                        showingCategorySettings = category
+                                        renameCategoryName = category.name
+                                        showingRenameCategoryAlert = true
                                     } label: {
-                                        Label("Copy to Category...", systemImage: "doc.on.doc")
+                                        Label("Rename Category", systemImage: "pencil")
                                     }
 
-                                    Button(role: .destructive) {
-                                        modelContext.delete(roll)
+                                    Button {
+                                        showingNewGoalRollCategory = true
                                     } label: {
-                                        Label("Delete", systemImage: "trash")
+                                        Label("New Category", systemImage: "plus")
                                     }
-                                }
-                        }
-                        .onMove { fromOffsets, toOffset in
-                            moveGoalRolls(in: category, from: fromOffsets, to: toOffset)
-                        }
-                    }
-                } header: {
-                    HStack {
-                        Text(category.name)
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(.primary)
-                        Spacer()
 
-                        // Category settings
-                        Menu {
-                            Button {
-                                showingCategorySettings = category
-                                renameCategoryName = category.name
-                                showingRenameCategoryAlert = true
-                            } label: {
-                                Label("Rename Category", systemImage: "pencil")
-                            }
-
-                            Button {
-                                showingNewGoalRollCategory = true
-                            } label: {
-                                Label("New Category", systemImage: "plus")
-                            }
-
-                            if canDeleteCategory {
-                                Divider()
-                                Button(role: .destructive) {
-                                    categoryToDelete = category
-                                    showingDeleteCategoryAlert = true
+                                    if canDeleteCategory {
+                                        Divider()
+                                        Button(role: .destructive) {
+                                            categoryToDelete = category
+                                            showingDeleteCategoryAlert = true
+                                        } label: {
+                                            Label("Delete Category", systemImage: "trash")
+                                        }
+                                    }
                                 } label: {
-                                    Label("Delete Category", systemImage: "trash")
+                                    Image(systemName: "gearshape")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
                                 }
-                            }
-                        } label: {
-                            Image(systemName: "gearshape")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                        .buttonStyle(.borderless)
+                                .buttonStyle(.borderless)
 
-                        // Add button
-                        Button {
-                            selectedCategoryForNewRoll = category
-                            showingAddRollNew = true
-                        } label: {
-                            Image(systemName: "plus.circle.fill")
-                                .font(.caption)
-                                .foregroundStyle(.blue)
+                                // Add button
+                                Button {
+                                    selectedCategoryForNewRoll = category
+                                    showingAddRollNew = true
+                                } label: {
+                                    Image(systemName: "plus.circle.fill")
+                                        .font(.caption)
+                                        .foregroundStyle(.blue)
+                                }
+                                .buttonStyle(.borderless)
+                            }
+                            .padding(.vertical, 4)
+                            .padding(.horizontal, 8)
+                            .background(Color(.systemGray5))
+
+                            let rolls = goalRollsForCategory(category)
+                            if rolls.isEmpty {
+                                Text("No goal rolls yet.")
+                                    .foregroundStyle(.secondary)
+                                    .font(.caption)
+                                    .padding(6)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .background(Color.white)
+                            } else {
+                                VStack(spacing: 0) {
+                                    ForEach(rolls) { roll in
+                                        goalRollDisclosureRow(roll)
+                                            .contextMenu {
+                                                Button {
+                                                    rollToCopy = roll
+                                                    showingCopyPicker = true
+                                                } label: {
+                                                    Label("Copy to Category...", systemImage: "doc.on.doc")
+                                                }
+
+                                                Button(role: .destructive) {
+                                                    modelContext.delete(roll)
+                                                } label: {
+                                                    Label("Delete", systemImage: "trash")
+                                                }
+                                            }
+                                    }
+                                    .onMove { fromOffsets, toOffset in
+                                        moveGoalRolls(in: category, from: fromOffsets, to: toOffset)
+                                    }
+                                }
+                                .padding(6)
+                                .background(Color.white)
+                            }
                         }
-                        .buttonStyle(.borderless)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
-                    .padding(.vertical, 2)
-                    .padding(.horizontal, 8)
-                    .background(Color(.systemGray5))
-                    .cornerRadius(4)
-                    .textCase(nil)
                 }
             }
+            .listRowBackground(Color.clear)
 
             Section {
                 VStack(spacing: 6) {
@@ -560,7 +568,6 @@ struct CharacterDetailView: View {
                 }
             }
             .listRowBackground(Color.clear)
-            .listRowInsets(EdgeInsets(top: 2, leading: 16, bottom: 0, trailing: 16))
 
             // Physical Combat
             Section {
