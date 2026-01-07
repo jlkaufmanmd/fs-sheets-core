@@ -17,14 +17,32 @@ struct CharacterDetailView: View {
     @State private var showingAddInitiative = false
     @State private var initiativeSubcategory: String = "Physical"
 
+    // Goal Roll category management
+    @State private var showingGoalRollCategoryPicker = false
+    @State private var showingNewGoalRollCategory = false
+    @State private var newGoalRollCategoryName = ""
+    @State private var selectedCategoryForNewRoll: GoalRollCategory?
+    @State private var showingCategorySettings: GoalRollCategory?
+    @State private var showingRenameCategoryAlert = false
+    @State private var renameCategoryName = ""
+    @State private var showingDeleteCategoryAlert = false
+    @State private var categoryToDelete: GoalRollCategory?
+    @State private var deleteCategoryAction: DeleteCategoryAction = .deleteRolls
+    @State private var migrationTargetCategory: GoalRollCategory?
+
     // Inline value editing focus (tap number to type)
     @FocusState private var focusedStatID: PersistentIdentifier?
     @FocusState private var focusedSkillID: PersistentIdentifier?
     @FocusState private var isNameFieldFocused: Bool
-    
+
     // Name validation
     @State private var showingDuplicateNameAlert = false
     @State private var previousValidName: String = ""
+
+    enum DeleteCategoryAction {
+        case deleteRolls
+        case migrateRolls
+    }
 
     private var attributes: [Stat] {
         character.stats
@@ -132,6 +150,21 @@ struct CharacterDetailView: View {
 
     private var tongueTemplates: [SkillTemplate] {
         availableSkillTemplates.filter { $0.category == "Tongues" }
+    }
+
+    // Goal Roll Categories
+    private var goalRollCategories: [GoalRollCategory] {
+        character.goalRollCategories.sorted { $0.displayOrder < $1.displayOrder }
+    }
+
+    private func goalRollsForCategory(_ category: GoalRollCategory) -> [CharacterGoalRoll] {
+        character.goalRolls
+            .filter { $0.category?.persistentModelID == category.persistentModelID }
+            .sorted { $0.displayOrder < $1.displayOrder }
+    }
+
+    private var canDeleteCategory: Bool {
+        character.goalRollCategories.count > 1
     }
 
     // Display name for quick-add alert
@@ -432,7 +465,7 @@ struct CharacterDetailView: View {
             }
 
             Section {
-                Text("CALCULATED STATS")
+                Text("DASHBOARD")
                     .font(.headline)
                     .fontWeight(.bold)
                     .frame(maxWidth: .infinity, alignment: .center)
@@ -440,7 +473,7 @@ struct CharacterDetailView: View {
                     .listRowBackground(Color(.systemGray6))
             }
 
-            // Combat Metrics - Physical
+            // Physical Combat
             Section {
                 if physicalCombatMetrics.isEmpty {
                     Text("No physical combat metrics yet.")
@@ -465,7 +498,7 @@ struct CharacterDetailView: View {
                 }
             } header: {
                 HStack {
-                    Text("Physical Combat Profile")
+                    Text("Physical Combat")
                         .font(.subheadline)
                         .fontWeight(.semibold)
                         .foregroundStyle(.primary)
@@ -532,7 +565,7 @@ struct CharacterDetailView: View {
                 }
             } header: {
                 HStack {
-                    Text("Occult Combat Profile")
+                    Text("Occult Combat")
                         .font(.subheadline)
                         .fontWeight(.semibold)
                         .foregroundStyle(.primary)
@@ -574,80 +607,88 @@ struct CharacterDetailView: View {
                 .textCase(nil)
             }
 
+            // General Traits
             Section {
-                if goalRolls.isEmpty {
-                    Text("No goal rolls yet.")
-                        .foregroundStyle(.secondary)
-                        .font(.callout)
-                } else {
-                    ForEach(goalRolls) { roll in
-                        goalRollDisclosureRow(roll)
-                            .contextMenu {
-                                Button(role: .destructive) {
-                                    modelContext.delete(roll)
-                                } label: {
-                                    Label("Delete", systemImage: "trash")
-                                }
-                            }
-                    }
-                    .onDelete { offsets in
-                        offsets.forEach { index in
-                            modelContext.delete(goalRolls[index])
-                        }
-                    }
-                }
+                Text("Coming soon")
+                    .foregroundStyle(.secondary)
+                    .font(.callout)
             } header: {
                 HStack {
-                    Text("Goal Rolls")
+                    Text("General Traits")
                         .font(.subheadline)
                         .fontWeight(.semibold)
                         .foregroundStyle(.primary)
                     Spacer()
-
-                    // Show button if no available templates, menu if templates exist
-                    if !availableGoalRollTemplates.isEmpty {
-                        Menu {
-                            Button("New…") { showingAddRollNew = true }
-
-                            Divider()
-
-                            ForEach(availableGoalRollTemplates) { template in
-                                Button(template.name) {
-                                    // Auto-add missing learned skill if needed
-                                    if template.defaultSkillMode == .learned,
-                                       let skillTemplate = template.defaultLearnedSkillTemplate {
-                                        let hasSkill = character.learnedSkills.contains {
-                                            $0.template?.persistentModelID == skillTemplate.persistentModelID
-                                        }
-                                        if !hasSkill {
-                                            let newSkill = CharacterSkill(template: skillTemplate, value: 0)
-                                            character.learnedSkills.append(newSkill)
-                                        }
-                                    }
-
-                                    // Add goal roll
-                                    let newRoll = CharacterGoalRoll(template: template)
-                                    character.goalRolls.append(newRoll)
-                                }
-                            }
-                        } label: {
-                            Image(systemName: "plus.circle.fill")
-                                .foregroundStyle(.blue)
-                        }
-                    } else {
-                        Button {
-                            showingAddRollNew = true
-                        } label: {
-                            Image(systemName: "plus.circle.fill")
-                                .foregroundStyle(.blue)
-                        }
-                    }
                 }
                 .padding(.vertical, 4)
                 .padding(.horizontal, 8)
                 .background(Color(.systemGray5))
                 .cornerRadius(6)
                 .textCase(nil)
+            }
+
+            Section {
+                Text("GOAL ROLLS")
+                    .font(.headline)
+                    .fontWeight(.bold)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
+                    .listRowBackground(Color(.systemGray6))
+            }
+
+            // Goal Roll Categories
+            ForEach(goalRollCategories) { category in
+                Section {
+                    let rolls = goalRollsForCategory(category)
+                    if rolls.isEmpty {
+                        Text("No goal rolls yet.")
+                            .foregroundStyle(.secondary)
+                            .font(.callout)
+                    } else {
+                        ForEach(rolls) { roll in
+                            goalRollDisclosureRow(roll)
+                                .contextMenu {
+                                    Button(role: .destructive) {
+                                        modelContext.delete(roll)
+                                    } label: {
+                                        Label("Delete", systemImage: "trash")
+                                    }
+                                }
+                        }
+                    }
+                } header: {
+                    HStack {
+                        Text(category.name)
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.primary)
+                        Spacer()
+
+                        // Category settings (placeholder for now)
+                        Button {
+                            // TODO: Category management
+                        } label: {
+                            Image(systemName: "gearshape")
+                                .foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.borderless)
+
+                        // Add button (simplified for now)
+                        Button {
+                            selectedCategoryForNewRoll = category
+                            showingAddRollNew = true
+                        } label: {
+                            Image(systemName: "plus.circle.fill")
+                                .foregroundStyle(.blue)
+                        }
+                        .buttonStyle(.borderless)
+                    }
+                    .padding(.vertical, 4)
+                    .padding(.horizontal, 8)
+                    .background(Color(.systemGray5))
+                    .cornerRadius(6)
+                    .textCase(nil)
+                }
             }
         }
         .scrollDismissesKeyboard(.never)
@@ -662,11 +703,12 @@ struct CharacterDetailView: View {
         }
         .onAppear {
             ensureLibraryExists()
+            ensureDefaultCategories()
             previousValidName = character.name
         }
         .sheet(isPresented: $showingAddRollNew) {
             if let lib = library {
-                AddGoalRollView(character: character, library: lib, isPresented: $showingAddRollNew, mode: .new)
+                AddGoalRollView(character: character, library: lib, isPresented: $showingAddRollNew, mode: .new, category: selectedCategoryForNewRoll)
             }
         }
         .sheet(isPresented: $showingAddInitiative) {
@@ -1088,5 +1130,26 @@ struct CharacterDetailView: View {
 
         library.combatMetricTemplates.append(contentsOf: physicalMetrics)
         library.combatMetricTemplates.append(contentsOf: occultMetrics)
+    }
+
+    private func ensureDefaultCategories() {
+        // Create default Physical and Occult categories if none exist
+        if character.goalRollCategories.isEmpty {
+            let physical = GoalRollCategory(name: "Physical", displayOrder: 0)
+            physical.character = character
+            character.goalRollCategories.append(physical)
+            modelContext.insert(physical)
+
+            let occult = GoalRollCategory(name: "Occult", displayOrder: 1)
+            occult.character = character
+            character.goalRollCategories.append(occult)
+            modelContext.insert(occult)
+        }
+
+        // Assign uncategorized goal rolls to first category
+        let firstCategory = character.goalRollCategories.sorted { $0.displayOrder < $1.displayOrder }.first
+        for roll in character.goalRolls where roll.category == nil {
+            roll.category = firstCategory
+        }
     }
 }

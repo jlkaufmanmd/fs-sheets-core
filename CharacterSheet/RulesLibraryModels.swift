@@ -166,6 +166,25 @@ final class GoalRollTemplate: KeywordProvider {
     var keywordsForRules: [String] { implicitKeywords }
 }
 
+// MARK: - Goal Roll Categories
+
+@Model
+final class GoalRollCategory {
+    var name: String
+    var displayOrder: Int
+
+    var character: RPGCharacter?
+
+    @Relationship(deleteRule: .nullify, inverse: \CharacterGoalRoll.category)
+    var goalRolls: [CharacterGoalRoll]
+
+    init(name: String, displayOrder: Int = 0) {
+        self.name = name
+        self.displayOrder = displayOrder
+        self.goalRolls = []
+    }
+}
+
 @Model
 final class CharacterGoalRoll: KeywordProvider {
     var isBranched: Bool
@@ -176,6 +195,8 @@ final class CharacterGoalRoll: KeywordProvider {
     var overrideBaseModifier: Int
     var overrideUserKeywords: String
 
+    var displayOrder: Int
+
     var template: GoalRollTemplate?
 
     // When branched: used as overrides
@@ -184,6 +205,7 @@ final class CharacterGoalRoll: KeywordProvider {
     var characterSkill: CharacterSkill?
 
     var character: RPGCharacter?
+    var category: GoalRollCategory?
 
     init(
         template: GoalRollTemplate,
@@ -202,6 +224,7 @@ final class CharacterGoalRoll: KeywordProvider {
         self.overrideDescription = ""
         self.overrideBaseModifier = 0
         self.overrideUserKeywords = ""
+        self.displayOrder = 0
     }
 
     // MARK: - Template fields (name/desc/mod/keywords)

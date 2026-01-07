@@ -11,6 +11,7 @@ struct AddGoalRollView: View {
     var library: RulesLibrary
     @Binding var isPresented: Bool
     let mode: Mode
+    var category: GoalRollCategory?
 
     // Shared fields
     @State private var name: String = ""
@@ -233,6 +234,7 @@ struct AddGoalRollView: View {
                 naturalSkillStat: nil,
                 characterSkill: nil
             )
+            roll.category = category
             character.goalRolls.append(roll)
             isPresented = false
 
@@ -252,6 +254,7 @@ struct AddGoalRollView: View {
             }
 
             let roll = CharacterGoalRoll(template: template)
+            roll.category = category
             character.goalRolls.append(roll)
             isPresented = false
         }
