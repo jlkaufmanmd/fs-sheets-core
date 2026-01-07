@@ -30,6 +30,8 @@ struct CharacterDetailView: View {
     @State private var deleteCategoryAction: DeleteCategoryAction = .deleteRolls
     @State private var migrationTargetCategory: GoalRollCategory?
     @State private var showingMigrationPicker = false
+    @State private var showingCopyPicker = false
+    @State private var rollToCopy: CharacterGoalRoll?
 
     // Inline value editing focus (tap number to type)
     @FocusState private var focusedStatID: PersistentIdentifier?
@@ -644,6 +646,13 @@ struct CharacterDetailView: View {
                         ForEach(rolls) { roll in
                             goalRollDisclosureRow(roll)
                                 .contextMenu {
+                                    Button {
+                                        rollToCopy = roll
+                                        showingCopyPicker = true
+                                    } label: {
+                                        Label("Copy to Category...", systemImage: "doc.on.doc")
+                                    }
+
                                     Button(role: .destructive) {
                                         modelContext.delete(roll)
                                     } label: {
@@ -801,6 +810,23 @@ struct CharacterDetailView: View {
                 onSelect: { targetCategory in
                     if let categoryToDelete {
                         migrateAndDeleteCategory(categoryToDelete, to: targetCategory)
+                    }
+                }
+            )
+        }
+        .sheet(isPresented: $showingCopyPicker) {
+            CopyGoalRollPickerView(
+                isPresented: $showingCopyPicker,
+                categories: goalRollCategories,
+                onSelect: { targetCategory in
+                    if let rollToCopy {
+                        copyGoalRoll(rollToCopy, to: targetCategory)
+                    }
+                },
+                onCreateNew: { newCategoryName in
+                    if let rollToCopy {
+                        let newCategory = createCategoryAndReturnIt(name: newCategoryName)
+                        copyGoalRoll(rollToCopy, to: newCategory)
                     }
                 }
             )
@@ -1286,6 +1312,19 @@ struct CharacterDetailView: View {
         newGoalRollCategoryName = ""
     }
 
+    private func createCategoryAndReturnIt(name: String) -> GoalRollCategory {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let finalName = trimmed.isEmpty ? "New Category" : trimmed
+
+        let maxOrder = character.goalRollCategories.map { $0.displayOrder }.max() ?? 0
+        let newCategory = GoalRollCategory(name: finalName, displayOrder: maxOrder + 1)
+        newCategory.character = character
+        character.goalRollCategories.append(newCategory)
+        modelContext.insert(newCategory)
+
+        return newCategory
+    }
+
     private func deleteCategory(_ category: GoalRollCategory, deleteRolls: Bool) {
         if deleteRolls {
             // Delete all goal rolls in this category
@@ -1321,5 +1360,28 @@ struct CharacterDetailView: View {
         for (index, roll) in rolls.enumerated() {
             roll.displayOrder = index
         }
+    }
+
+    private func copyGoalRoll(_ roll: CharacterGoalRoll, to category: GoalRollCategory) {
+        // Calculate next displayOrder in target category
+        let existingRollsInCategory = character.goalRolls.filter { $0.category?.persistentModelID == category.persistentModelID }
+        let maxOrder = existingRollsInCategory.map { $0.displayOrder }.max() ?? -1
+
+        // Create a duplicate with all the same properties
+        let newRoll = CharacterGoalRoll(
+            name: roll.name,
+            description: roll.rollDescription,
+            keywords: roll.userKeywords,
+            baseModifier: roll.baseModifier,
+            attributeStat: roll.attributeStat,
+            naturalSkillStat: roll.naturalSkillStat,
+            characterSkill: roll.characterSkill
+        )
+        newRoll.category = category
+        newRoll.displayOrder = maxOrder + 1
+        character.goalRolls.append(newRoll)
+
+        rollToCopy = nil
+        showingCopyPicker = false
     }
 }
