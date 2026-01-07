@@ -219,24 +219,34 @@ struct CharacterDetailView: View {
                 }
             }
 
-            Text("ATTRIBUTES")
-                .font(.subheadline)
-                .fontWeight(.bold)
-                .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.top, 12)
-                .padding(.bottom, 6)
+            Section {
+                Text("ATTRIBUTES")
+                    .font(.subheadline)
+                    .fontWeight(.bold)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.top, 12)
+                    .padding(.bottom, 6)
+            }
+            .listRowBackground(Color.clear)
+            .listRowInsets(EdgeInsets())
 
-            compactAttributesGrid
-                .padding(.horizontal, 16)
+            Section {
+                compactAttributesGrid
+            }
 
-            Text("SKILLS")
-                .font(.subheadline)
-                .fontWeight(.bold)
-                .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.top, 12)
-                .padding(.bottom, 6)
+            Section {
+                Text("SKILLS")
+                    .font(.subheadline)
+                    .fontWeight(.bold)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.top, 12)
+                    .padding(.bottom, 6)
+            }
+            .listRowBackground(Color.clear)
+            .listRowInsets(EdgeInsets())
 
-            VStack(spacing: 6) {
+            Section {
+                VStack(spacing: 6) {
                     // Natural Skills
                     VStack(alignment: .leading, spacing: 0) {
                         HStack {
@@ -443,16 +453,20 @@ struct CharacterDetailView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                 }
             }
-            .padding(.horizontal, 16)
 
-            Text("GOAL ROLLS")
-                .font(.subheadline)
-                .fontWeight(.bold)
-                .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.top, 12)
-                .padding(.bottom, 6)
+            Section {
+                Text("GOAL ROLLS")
+                    .font(.subheadline)
+                    .fontWeight(.bold)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.top, 12)
+                    .padding(.bottom, 6)
+            }
+            .listRowBackground(Color.clear)
+            .listRowInsets(EdgeInsets())
 
-            VStack(spacing: 6) {
+            Section {
+                VStack(spacing: 6) {
                     ForEach(goalRollCategories) { category in
                         VStack(alignment: .leading, spacing: 0) {
                             HStack {
@@ -548,14 +562,17 @@ struct CharacterDetailView: View {
                     }
                 }
             }
-            .padding(.horizontal, 16)
 
-            Text("DASHBOARD")
-                .font(.subheadline)
-                .fontWeight(.bold)
-                .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.top, 12)
-                .padding(.bottom, 6)
+            Section {
+                Text("DASHBOARD")
+                    .font(.subheadline)
+                    .fontWeight(.bold)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.top, 12)
+                    .padding(.bottom, 6)
+            }
+            .listRowBackground(Color.clear)
+            .listRowInsets(EdgeInsets())
 
             // Physical Combat
             Section {
