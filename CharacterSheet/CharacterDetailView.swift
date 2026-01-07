@@ -39,8 +39,8 @@ struct CharacterDetailView: View {
     @FocusState private var isNameFieldFocused: Bool
 
     // Stat expansion state
-    @State private var expandedStatID: PersistentIdentifier?
-    @State private var expandedSkillID: PersistentIdentifier?
+    @State private var expandedStatIDs: Set<PersistentIdentifier> = []
+    @State private var expandedSkillIDs: Set<PersistentIdentifier> = []
     @State private var expandedGoalRollID: PersistentIdentifier?
 
     // Name validation
@@ -849,15 +849,26 @@ struct CharacterDetailView: View {
 
     @ViewBuilder
     private func goalRollDisclosureRow(_ roll: CharacterGoalRoll) -> some View {
-        // Label row
         VStack(alignment: .leading, spacing: 1) {
-            Text(roll.name)
-                .font(.caption)
-            Text("Goal: \(roll.goalValue)")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
+            // Tappable label area
+            VStack(alignment: .leading, spacing: 1) {
+                Text(roll.name)
+                    .font(.caption)
+                Text("Goal: \(roll.goalValue)")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                if expandedGoalRollID == roll.persistentModelID {
+                    expandedGoalRollID = nil
+                } else {
+                    expandedGoalRollID = roll.persistentModelID
+                }
+            }
 
-            // Expanded details directly below (not in separate VStack)
+            // Expanded details directly below
             if expandedGoalRollID == roll.persistentModelID {
                 VStack(alignment: .leading, spacing: 6) {
                     // Show calculation breakdown
@@ -926,18 +937,9 @@ struct CharacterDetailView: View {
                 .padding(.top, 6)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.vertical, 6)
         .padding(.horizontal, 8)
         .background(expandedGoalRollID == roll.persistentModelID ? Color(.systemGray6) : Color.clear)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            if expandedGoalRollID == roll.persistentModelID {
-                expandedGoalRollID = nil
-            } else {
-                expandedGoalRollID = roll.persistentModelID
-            }
-        }
     }
 
     @ViewBuilder
@@ -1159,10 +1161,10 @@ struct CharacterDetailView: View {
                     .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
                     .onTapGesture {
-                        if expandedStatID == stat.persistentModelID {
-                            expandedStatID = nil
+                        if expandedStatIDs.contains(stat.persistentModelID) {
+                            expandedStatIDs.remove(stat.persistentModelID)
                         } else {
-                            expandedStatID = stat.persistentModelID
+                            expandedStatIDs.insert(stat.persistentModelID)
                         }
                     }
 
@@ -1199,11 +1201,11 @@ struct CharacterDetailView: View {
                 }
             }
             .padding(.vertical, 4)
-            .background(expandedStatID == stat.persistentModelID ? Color(.systemGray6) : Color.clear)
+            .background(expandedStatIDs.contains(stat.persistentModelID) ? Color(.systemGray6) : Color.clear)
             .cornerRadius(6)
 
             // Details appear directly below this stat
-            if expandedStatID == stat.persistentModelID {
+            if expandedStatIDs.contains(stat.persistentModelID) {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
                         Text("Base")
@@ -1241,7 +1243,7 @@ struct CharacterDetailView: View {
                 .cornerRadius(4)
             }
         }
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
     @ViewBuilder
@@ -1252,10 +1254,10 @@ struct CharacterDetailView: View {
                 Text(stat.name)
                     .font(.caption)
                     .onTapGesture {
-                        if expandedStatID == stat.persistentModelID {
-                            expandedStatID = nil
+                        if expandedStatIDs.contains(stat.persistentModelID) {
+                            expandedStatIDs.remove(stat.persistentModelID)
                         } else {
-                            expandedStatID = stat.persistentModelID
+                            expandedStatIDs.insert(stat.persistentModelID)
                         }
                     }
                 Spacer()
@@ -1291,11 +1293,11 @@ struct CharacterDetailView: View {
             }
             .padding(.vertical, 2)
             .padding(.horizontal, 4)
-            .background(expandedStatID == stat.persistentModelID ? Color(.systemGray6) : Color.clear)
+            .background(expandedStatIDs.contains(stat.persistentModelID) ? Color(.systemGray6) : Color.clear)
             .cornerRadius(6)
 
             // Details appear directly below this stat
-            if expandedStatID == stat.persistentModelID {
+            if expandedStatIDs.contains(stat.persistentModelID) {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
                         Text("Base")
@@ -1333,6 +1335,7 @@ struct CharacterDetailView: View {
                 .cornerRadius(4)
             }
         }
+        .frame(maxHeight: .infinity, alignment: .top)
     }
 
     @ViewBuilder
@@ -1380,10 +1383,10 @@ struct CharacterDetailView: View {
                     .font(.caption)
                     .lineLimit(1)
                     .onTapGesture {
-                        if expandedSkillID == skill.persistentModelID {
-                            expandedSkillID = nil
+                        if expandedSkillIDs.contains(skill.persistentModelID) {
+                            expandedSkillIDs.remove(skill.persistentModelID)
                         } else {
-                            expandedSkillID = skill.persistentModelID
+                            expandedSkillIDs.insert(skill.persistentModelID)
                         }
                     }
                 Spacer()
@@ -1411,7 +1414,7 @@ struct CharacterDetailView: View {
             }
             .padding(.vertical, 2)
             .padding(.horizontal, 4)
-            .background(expandedSkillID == skill.persistentModelID ? Color(.systemGray6) : Color.clear)
+            .background(expandedSkillIDs.contains(skill.persistentModelID) ? Color(.systemGray6) : Color.clear)
             .cornerRadius(6)
             .contextMenu {
                 Button(role: .destructive) {
@@ -1422,7 +1425,7 @@ struct CharacterDetailView: View {
             }
 
             // Details appear directly below this skill
-            if expandedSkillID == skill.persistentModelID {
+            if expandedSkillIDs.contains(skill.persistentModelID) {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
                         Text("Base")
@@ -1451,6 +1454,7 @@ struct CharacterDetailView: View {
                 .cornerRadius(4)
             }
         }
+        .frame(maxHeight: .infinity, alignment: .top)
     }
 
     // MARK: - Validation & Actions
