@@ -38,7 +38,7 @@ struct ContentView: View {
                 CharacterDetailView(character: character)
             }
             .toolbar {
-                ToolbarItemGroup(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
                         createCharacter()
                     } label: {
