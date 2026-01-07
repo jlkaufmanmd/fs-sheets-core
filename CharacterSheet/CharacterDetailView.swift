@@ -219,25 +219,26 @@ struct CharacterDetailView: View {
                 }
             }
 
-            Section {
-                VStack(spacing: 6) {
-                    // Section header
-                    Text("ATTRIBUTES")
-                        .font(.subheadline)
-                        .fontWeight(.bold)
-                        .frame(maxWidth: .infinity, alignment: .center)
+            // ATTRIBUTES
+            Text("ATTRIBUTES")
+                .font(.subheadline)
+                .fontWeight(.bold)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.top, 8)
 
-                    compactAttributesGrid
-                }
+            Section {
+                compactAttributesGrid
             }
 
+            // SKILLS
+            Text("SKILLS")
+                .font(.subheadline)
+                .fontWeight(.bold)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.top, 8)
+
             Section {
                 VStack(spacing: 6) {
-                    // Section header
-                    Text("SKILLS")
-                        .font(.subheadline)
-                        .fontWeight(.bold)
-                        .frame(maxWidth: .infinity, alignment: .center)
                     // Natural Skills
                     VStack(alignment: .leading, spacing: 0) {
                         HStack {
@@ -445,17 +446,13 @@ struct CharacterDetailView: View {
                 }
             }
 
-            Section {
-                VStack(spacing: 6) {
-                    // Section header
-                    Text("GOAL ROLLS")
-                        .font(.subheadline)
-                        .fontWeight(.bold)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                }
-            }
+            // GOAL ROLLS
+            Text("GOAL ROLLS")
+                .font(.subheadline)
+                .fontWeight(.bold)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.top, 8)
 
-            // Goal Roll Categories
             Section {
                 VStack(spacing: 6) {
                     ForEach(goalRollCategories) { category in
@@ -554,15 +551,12 @@ struct CharacterDetailView: View {
                 }
             }
 
-            Section {
-                VStack(spacing: 6) {
-                    // Section header
-                    Text("DASHBOARD")
-                        .font(.subheadline)
-                        .fontWeight(.bold)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                }
-            }
+            // DASHBOARD
+            Text("DASHBOARD")
+                .font(.subheadline)
+                .fontWeight(.bold)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.top, 8)
 
             // Physical Combat
             Section {
