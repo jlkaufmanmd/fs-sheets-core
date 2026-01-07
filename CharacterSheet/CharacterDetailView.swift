@@ -220,33 +220,24 @@ struct CharacterDetailView: View {
             }
 
             Section {
-                Text("ATTRIBUTES")
-                    .font(.subheadline)
-                    .fontWeight(.bold)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.top, 12)
-                    .padding(.bottom, 6)
-            }
-            .listRowBackground(Color.clear)
-            .listRowInsets(EdgeInsets())
+                VStack(spacing: 8) {
+                    Text("ATTRIBUTES")
+                        .font(.subheadline)
+                        .fontWeight(.bold)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.bottom, 4)
 
-            Section {
-                compactAttributesGrid
+                    compactAttributesGrid
+                }
             }
 
             Section {
-                Text("SKILLS")
-                    .font(.subheadline)
-                    .fontWeight(.bold)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.top, 12)
-                    .padding(.bottom, 6)
-            }
-            .listRowBackground(Color.clear)
-            .listRowInsets(EdgeInsets())
-
-            Section {
-                VStack(spacing: 6) {
+                VStack(spacing: 8) {
+                    Text("SKILLS")
+                        .font(.subheadline)
+                        .fontWeight(.bold)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.bottom, 4)
                     // Natural Skills
                     VStack(alignment: .leading, spacing: 0) {
                         HStack {
@@ -455,18 +446,13 @@ struct CharacterDetailView: View {
             }
 
             Section {
-                Text("GOAL ROLLS")
-                    .font(.subheadline)
-                    .fontWeight(.bold)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .padding(.top, 12)
-                    .padding(.bottom, 6)
-            }
-            .listRowBackground(Color.clear)
-            .listRowInsets(EdgeInsets())
+                VStack(spacing: 8) {
+                    Text("GOAL ROLLS")
+                        .font(.subheadline)
+                        .fontWeight(.bold)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.bottom, 4)
 
-            Section {
-                VStack(spacing: 6) {
                     ForEach(goalRollCategories) { category in
                         VStack(alignment: .leading, spacing: 0) {
                             HStack {
@@ -1148,12 +1134,16 @@ struct CharacterDetailView: View {
                 .padding(.horizontal, 8)
                 .background(Color(.systemGray5))
 
-                HStack(spacing: 8) {
-                    ForEach(bodyAttributes) { stat in
+                HStack(spacing: 0) {
+                    ForEach(Array(bodyAttributes.enumerated()), id: \.element.id) { index, stat in
+                        if index > 0 {
+                            Spacer()
+                        }
                         verticalStatCell(stat)
                     }
                 }
-                .padding(6)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
                 .background(Color.white)
             }
             .clipShape(RoundedRectangle(cornerRadius: 8))
@@ -1171,12 +1161,16 @@ struct CharacterDetailView: View {
                 .padding(.horizontal, 8)
                 .background(Color(.systemGray5))
 
-                HStack(spacing: 8) {
-                    ForEach(mindAttributes) { stat in
+                HStack(spacing: 0) {
+                    ForEach(Array(mindAttributes.enumerated()), id: \.element.id) { index, stat in
+                        if index > 0 {
+                            Spacer()
+                        }
                         verticalStatCell(stat)
                     }
                 }
-                .padding(6)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
                 .background(Color.white)
             }
             .clipShape(RoundedRectangle(cornerRadius: 8))
@@ -1196,12 +1190,14 @@ struct CharacterDetailView: View {
 
                 VStack(spacing: 6) {
                     // Row 1: Passion, Extrovert, Ego
-                    HStack(spacing: 8) {
+                    HStack(spacing: 0) {
                         if let passion = spiritAttributes.first(where: { $0.name == "Passion" }) {
                             verticalStatCell(passion)
+                            Spacer()
                         }
                         if let extrovert = spiritAttributes.first(where: { $0.name == "Extrovert" }) {
                             verticalStatCell(extrovert)
+                            Spacer()
                         }
                         if let ego = spiritAttributes.first(where: { $0.name == "Ego" }) {
                             verticalStatCell(ego)
@@ -1209,19 +1205,22 @@ struct CharacterDetailView: View {
                     }
 
                     // Row 2: Calm, Introvert, Faith
-                    HStack(spacing: 8) {
+                    HStack(spacing: 0) {
                         if let calm = spiritAttributes.first(where: { $0.name == "Calm" }) {
                             verticalStatCell(calm)
+                            Spacer()
                         }
                         if let introvert = spiritAttributes.first(where: { $0.name == "Introvert" }) {
                             verticalStatCell(introvert)
+                            Spacer()
                         }
                         if let faith = spiritAttributes.first(where: { $0.name == "Faith" }) {
                             verticalStatCell(faith)
                         }
                     }
                 }
-                .padding(6)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
                 .background(Color.white)
             }
             .clipShape(RoundedRectangle(cornerRadius: 8))
