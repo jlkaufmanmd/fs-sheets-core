@@ -38,10 +38,8 @@ struct ContentView: View {
                 CharacterDetailView(character: character)
             }
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        createCharacter()
-                    } label: {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(action: createCharacter) {
                         Label("Add Character", systemImage: "plus")
                     }
                 }
