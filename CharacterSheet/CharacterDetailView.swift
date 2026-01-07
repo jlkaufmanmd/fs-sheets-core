@@ -226,13 +226,11 @@ struct CharacterDetailView: View {
                         .font(.subheadline)
                         .fontWeight(.bold)
                         .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.vertical, 4)
-                        .background(Color(.systemGray6))
-                        .cornerRadius(4)
 
                     compactAttributesGrid
                 }
             }
+            .listRowBackground(Color.clear)
             .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12))
 
             Section {
@@ -242,9 +240,6 @@ struct CharacterDetailView: View {
                         .font(.subheadline)
                         .fontWeight(.bold)
                         .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.vertical, 4)
-                        .background(Color(.systemGray6))
-                        .cornerRadius(4)
                     // Natural Skills
                     VStack(alignment: .leading, spacing: 0) {
                         HStack {
@@ -445,6 +440,7 @@ struct CharacterDetailView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                 }
             }
+            .listRowBackground(Color.clear)
             .listRowInsets(EdgeInsets(top: 2, leading: 12, bottom: 4, trailing: 12))
 
             Section {
@@ -454,12 +450,10 @@ struct CharacterDetailView: View {
                         .font(.subheadline)
                         .fontWeight(.bold)
                         .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.vertical, 4)
-                        .background(Color(.systemGray6))
-                        .cornerRadius(4)
                         .padding(.bottom, 12)
                 }
             }
+            .listRowBackground(Color.clear)
             .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 0, trailing: 12))
 
             // Goal Roll Categories
@@ -558,12 +552,10 @@ struct CharacterDetailView: View {
                         .font(.subheadline)
                         .fontWeight(.bold)
                         .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.vertical, 4)
-                        .background(Color(.systemGray6))
-                        .cornerRadius(4)
                         .padding(.bottom, 12)
                 }
             }
+            .listRowBackground(Color.clear)
             .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 0, trailing: 12))
 
             // Physical Combat
