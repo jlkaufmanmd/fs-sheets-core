@@ -243,6 +243,15 @@ final class CharacterGoalRoll: KeywordProvider {
         return nil
     }
 
+    var skillValue: Int? {
+        if let natSkill = naturalSkillStat {
+            return natSkill.value
+        } else if let learnedSkill = characterSkill {
+            return learnedSkill.value
+        }
+        return nil
+    }
+
     var keywordsForRules: [String] {
         var base = [name, "goal roll"]
 

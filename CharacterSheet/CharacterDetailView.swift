@@ -958,30 +958,51 @@ struct CharacterDetailView: View {
     private func goalRollDisclosureRow(_ roll: CharacterGoalRoll) -> some View {
         DisclosureGroup {
             VStack(alignment: .leading, spacing: 8) {
-                if let attrStat = roll.attributeStat {
+                // Show calculation breakdown
+                VStack(alignment: .leading, spacing: 4) {
                     HStack {
-                        Text("Attribute")
+                        Text("Goal Value")
                         Spacer()
-                        Text(attrStat.name)
-                            .fontWeight(.medium)
+                        Text("\(roll.goalValue)")
+                            .fontWeight(.bold)
                     }
-                }
 
-                if let skillName = roll.skillName {
-                    HStack {
-                        Text("Skill")
-                        Spacer()
-                        Text(skillName)
-                            .fontWeight(.medium)
+                    // Show breakdown
+                    if let attrStat = roll.attributeStat {
+                        HStack {
+                            Text("  \(attrStat.name)")
+                                .font(.callout)
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            Text("\(attrStat.value)")
+                                .font(.callout)
+                                .foregroundStyle(.secondary)
+                        }
                     }
-                }
 
-                HStack {
-                    Text("Goal Value")
-                    Spacer()
-                    Text("\(roll.goalValue)")
-                        .fontWeight(.medium)
-                        .foregroundStyle(.secondary)
+                    if let skillName = roll.skillName, let skillValue = roll.skillValue {
+                        HStack {
+                            Text("  \(skillName)")
+                                .font(.callout)
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            Text("\(skillValue)")
+                                .font(.callout)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    if roll.baseModifier != 0 {
+                        HStack {
+                            Text("  Base Modifier")
+                                .font(.callout)
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            Text("\(roll.baseModifier >= 0 ? "+" : "")\(roll.baseModifier)")
+                                .font(.callout)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                 }
 
                 Divider()
