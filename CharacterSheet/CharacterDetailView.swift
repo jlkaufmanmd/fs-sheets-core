@@ -220,7 +220,7 @@ struct CharacterDetailView: View {
             }
 
             Section {
-                VStack(spacing: 12) {
+                VStack(spacing: 6) {
                     // Section header
                     Text("ATTRIBUTES")
                         .font(.subheadline)
@@ -231,10 +231,10 @@ struct CharacterDetailView: View {
                 }
             }
             .listRowBackground(Color.clear)
-            .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 4, trailing: 12))
+            .listRowInsets(EdgeInsets(top: 2, leading: 16, bottom: 2, trailing: 16))
 
             Section {
-                VStack(spacing: 12) {
+                VStack(spacing: 6) {
                     // Section header
                     Text("SKILLS")
                         .font(.subheadline)
@@ -289,6 +289,7 @@ struct CharacterDetailView: View {
                                         .font(.caption)
                                         .foregroundStyle(.blue)
                                 }
+                                .buttonStyle(.borderless)
                             } else {
                                 Button {
                                     selectedSkillCategory = "Learned Skills"
@@ -298,6 +299,7 @@ struct CharacterDetailView: View {
                                         .font(.caption)
                                         .foregroundStyle(.blue)
                                 }
+                                .buttonStyle(.borderless)
                             }
                         }
                         .padding(.vertical, 4)
@@ -349,6 +351,7 @@ struct CharacterDetailView: View {
                                         .font(.caption)
                                         .foregroundStyle(.blue)
                                 }
+                                .buttonStyle(.borderless)
                             } else {
                                 Button {
                                     selectedSkillCategory = "Lores"
@@ -358,6 +361,7 @@ struct CharacterDetailView: View {
                                         .font(.caption)
                                         .foregroundStyle(.blue)
                                 }
+                                .buttonStyle(.borderless)
                             }
                         }
                         .padding(.vertical, 4)
@@ -409,6 +413,7 @@ struct CharacterDetailView: View {
                                         .font(.caption)
                                         .foregroundStyle(.blue)
                                 }
+                                .buttonStyle(.borderless)
                             } else {
                                 Button {
                                     selectedSkillCategory = "Tongues"
@@ -418,6 +423,7 @@ struct CharacterDetailView: View {
                                         .font(.caption)
                                         .foregroundStyle(.blue)
                                 }
+                                .buttonStyle(.borderless)
                             }
                         }
                         .padding(.vertical, 4)
@@ -441,20 +447,19 @@ struct CharacterDetailView: View {
                 }
             }
             .listRowBackground(Color.clear)
-            .listRowInsets(EdgeInsets(top: 2, leading: 12, bottom: 4, trailing: 12))
+            .listRowInsets(EdgeInsets(top: 2, leading: 16, bottom: 2, trailing: 16))
 
             Section {
-                VStack(spacing: 0) {
+                VStack(spacing: 6) {
                     // Section header
                     Text("GOAL ROLLS")
                         .font(.subheadline)
                         .fontWeight(.bold)
                         .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.bottom, 12)
                 }
             }
             .listRowBackground(Color.clear)
-            .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 0, trailing: 12))
+            .listRowInsets(EdgeInsets(top: 2, leading: 16, bottom: 0, trailing: 16))
 
             // Goal Roll Categories
             ForEach(goalRollCategories) { category in
@@ -546,17 +551,16 @@ struct CharacterDetailView: View {
             }
 
             Section {
-                VStack(spacing: 0) {
+                VStack(spacing: 6) {
                     // Section header
                     Text("DASHBOARD")
                         .font(.subheadline)
                         .fontWeight(.bold)
                         .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.bottom, 12)
                 }
             }
             .listRowBackground(Color.clear)
-            .listRowInsets(EdgeInsets(top: 4, leading: 12, bottom: 0, trailing: 12))
+            .listRowInsets(EdgeInsets(top: 2, leading: 16, bottom: 0, trailing: 16))
 
             // Physical Combat
             Section {
@@ -1118,7 +1122,7 @@ struct CharacterDetailView: View {
 
     @ViewBuilder
     private var compactAttributesGrid: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 6) {
             // Body
             VStack(alignment: .leading, spacing: 0) {
                 HStack {
