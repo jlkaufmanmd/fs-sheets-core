@@ -209,8 +209,8 @@ struct CharacterDetailView: View {
                     .onSubmit {
                         validateName()
                     }
-                    .onChange(of: isNameFieldFocused) { _, isFocused in
-                        if !isFocused {
+                    .onChange(of: isNameFieldFocused) { oldValue, newValue in
+                        if !newValue {
                             validateName()
                         }
                     }
@@ -1047,7 +1047,7 @@ struct CharacterDetailView: View {
                 .padding(.horizontal, 8)
                 .background(Color(.systemGray5))
 
-                HStack(spacing: 0, alignment: .top) {
+                HStack(alignment: .top, spacing: 0) {
                     ForEach(Array(bodyAttributes.enumerated()), id: \.element.id) { index, stat in
                         if index > 0 {
                             Spacer()
@@ -1074,7 +1074,7 @@ struct CharacterDetailView: View {
                 .padding(.horizontal, 8)
                 .background(Color(.systemGray5))
 
-                HStack(spacing: 0, alignment: .top) {
+                HStack(alignment: .top, spacing: 0) {
                     ForEach(Array(mindAttributes.enumerated()), id: \.element.id) { index, stat in
                         if index > 0 {
                             Spacer()
@@ -1103,7 +1103,7 @@ struct CharacterDetailView: View {
 
                 VStack(spacing: 6) {
                     // Row 1: Passion, Extrovert, Ego
-                    HStack(spacing: 0, alignment: .top) {
+                    HStack(alignment: .top, spacing: 0) {
                         if let passion = spiritAttributes.first(where: { $0.name == "Passion" }) {
                             verticalStatCell(passion)
                             Spacer()
@@ -1118,7 +1118,7 @@ struct CharacterDetailView: View {
                     }
 
                     // Row 2: Calm, Introvert, Faith
-                    HStack(spacing: 0, alignment: .top) {
+                    HStack(alignment: .top, spacing: 0) {
                         if let calm = spiritAttributes.first(where: { $0.name == "Calm" }) {
                             verticalStatCell(calm)
                             Spacer()
@@ -1152,7 +1152,7 @@ struct CharacterDetailView: View {
                     .padding(.horizontal, 8)
                     .background(Color(.systemGray5))
 
-                    HStack(spacing: 8, alignment: .top) {
+                    HStack(alignment: .top, spacing: 8) {
                         if let psi = occultAttributes.first(where: { $0.name == "Psi" }) {
                             verticalStatCell(psi)
                         }
