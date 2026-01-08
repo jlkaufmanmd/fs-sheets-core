@@ -202,6 +202,7 @@ struct CharacterDetailView: View {
 
     var body: some View {
         Form {
+            Group {
             Section {
                 TextField("Name", text: $character.name)
                     .font(.headline)
@@ -227,7 +228,9 @@ struct CharacterDetailView: View {
                         .frame(minHeight: 80)
                 }
             }
+            }
 
+            Group {
             Section {
                 VStack(spacing: 8) {
                     Text("ATTRIBUTES")
@@ -239,7 +242,9 @@ struct CharacterDetailView: View {
                     compactAttributesGrid
                 }
             }
+            }
 
+            Group {
             Section {
                 VStack(spacing: 8) {
                     Text("SKILLS")
@@ -453,7 +458,9 @@ struct CharacterDetailView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                 }
             }
+            }
 
+            Group {
             Section {
                 VStack(spacing: 8) {
                     Text("GOAL ROLLS")
@@ -565,7 +572,9 @@ struct CharacterDetailView: View {
                     }
                 }
             }
+            }
 
+            Group {
             Section {
                 Text("DASHBOARD")
                     .font(.subheadline)
@@ -731,6 +740,7 @@ struct CharacterDetailView: View {
                 .background(Color(.systemGray5))
                 .cornerRadius(4)
                 .textCase(nil)
+            }
             }
         }
         .scrollDismissesKeyboard(.never)
