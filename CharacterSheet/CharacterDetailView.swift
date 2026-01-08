@@ -1183,190 +1183,38 @@ struct CharacterDetailView: View {
 
     @ViewBuilder
     private func verticalStatCell(_ stat: Stat) -> some View {
-        VStack(spacing: 4) {
-            // The stat cell itself
-            VStack(spacing: 2) {
-                Text(stat.name)
-                    .font(.caption)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(2)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .onTapGesture {
-                        if expandedStatIDs.contains(stat.persistentModelID) {
-                            expandedStatIDs.remove(stat.persistentModelID)
-                        } else {
-                            expandedStatIDs.insert(stat.persistentModelID)
-                        }
-                    }
-
-                HStack(spacing: 3) {
-                    Button {
-                        stat.value -= 1
-                        if stat.value < stat.minimumValue { stat.value = stat.minimumValue }
-                    } label: {
-                        Image(systemName: "minus.circle")
-                            .font(.caption2)
-                    }
-                    .buttonStyle(.plain)
-
-                    // Show "base (effective)" format when they differ
-                    if stat.hasModifiers && stat.value != stat.effectiveValue {
-                        Text("\(stat.value) (\(stat.effectiveValue))")
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                            .frame(minWidth: 18)
+        StatCell(
+            stat: stat,
+            isExpanded: Binding(
+                get: { expandedStatIDs.contains(stat.persistentModelID) },
+                set: { newValue in
+                    if newValue {
+                        expandedStatIDs.insert(stat.persistentModelID)
                     } else {
-                        Text("\(stat.value)")
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                            .frame(minWidth: 18)
-                    }
-
-                    Button {
-                        stat.value += 1
-                    } label: {
-                        Image(systemName: "plus.circle")
-                            .font(.caption2)
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(.vertical, 4)
-            .background(expandedStatIDs.contains(stat.persistentModelID) ? Color(.systemGray6) : Color.clear)
-            .cornerRadius(6)
-
-            // Details appear directly below this stat
-            if expandedStatIDs.contains(stat.persistentModelID) {
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        Text("Base")
-                            .font(.caption2)
-                        Spacer()
-                        Text("\(stat.value)")
-                            .font(.caption2)
-                            .fontWeight(.bold)
-                    }
-
-                    if stat.hasModifiers {
-                        HStack {
-                            Text("Effective")
-                                .font(.caption2)
-                            Spacer()
-                            Text("\(stat.effectiveValue)")
-                                .font(.caption2)
-                                .fontWeight(.bold)
-                        }
-                    }
-
-                    Divider()
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Keywords")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                        Text(stat.implicitKeywords.joined(separator: ", "))
-                            .font(.caption2)
-                            .lineLimit(nil)
+                        expandedStatIDs.remove(stat.persistentModelID)
                     }
                 }
-                .padding(6)
-                .background(Color(.systemGray6))
-                .cornerRadius(4)
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            ),
+            layout: .vertical
+        )
     }
 
     @ViewBuilder
     private func compactStatRow(_ stat: Stat) -> some View {
-        VStack(spacing: 4) {
-            // The stat row itself
-            HStack(spacing: 4) {
-                Text(stat.name)
-                    .font(.caption)
-                    .onTapGesture {
-                        if expandedStatIDs.contains(stat.persistentModelID) {
-                            expandedStatIDs.remove(stat.persistentModelID)
-                        } else {
-                            expandedStatIDs.insert(stat.persistentModelID)
-                        }
-                    }
-                Spacer()
-                Button {
-                    stat.value -= 1
-                    if stat.value < stat.minimumValue { stat.value = stat.minimumValue }
-                } label: {
-                    Image(systemName: "minus.circle")
-                        .font(.caption2)
-                }
-                .buttonStyle(.plain)
-
-                // Show "base (effective)" format when they differ
-                if stat.hasModifiers && stat.value != stat.effectiveValue {
-                    Text("\(stat.value) (\(stat.effectiveValue))")
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                        .frame(minWidth: 20)
-                } else {
-                    Text("\(stat.value)")
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                        .frame(minWidth: 20)
-                }
-
-                Button {
-                    stat.value += 1
-                } label: {
-                    Image(systemName: "plus.circle")
-                        .font(.caption2)
-                }
-                .buttonStyle(.plain)
-            }
-            .padding(.vertical, 2)
-            .padding(.horizontal, 4)
-            .background(expandedStatIDs.contains(stat.persistentModelID) ? Color(.systemGray6) : Color.clear)
-            .cornerRadius(6)
-
-            // Details appear directly below this stat
-            if expandedStatIDs.contains(stat.persistentModelID) {
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        Text("Base")
-                            .font(.caption2)
-                        Spacer()
-                        Text("\(stat.value)")
-                            .font(.caption2)
-                            .fontWeight(.bold)
-                    }
-
-                    if stat.hasModifiers {
-                        HStack {
-                            Text("Effective")
-                                .font(.caption2)
-                            Spacer()
-                            Text("\(stat.effectiveValue)")
-                                .font(.caption2)
-                                .fontWeight(.bold)
-                        }
-                    }
-
-                    Divider()
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Keywords")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                        Text(stat.implicitKeywords.joined(separator: ", "))
-                            .font(.caption2)
-                            .lineLimit(nil)
+        StatCell(
+            stat: stat,
+            isExpanded: Binding(
+                get: { expandedStatIDs.contains(stat.persistentModelID) },
+                set: { newValue in
+                    if newValue {
+                        expandedStatIDs.insert(stat.persistentModelID)
+                    } else {
+                        expandedStatIDs.remove(stat.persistentModelID)
                     }
                 }
-                .padding(6)
-                .background(Color(.systemGray6))
-                .cornerRadius(4)
-            }
-        }
-        .frame(maxHeight: .infinity, alignment: .top)
+            ),
+            layout: .horizontal
+        )
     }
 
     @ViewBuilder
