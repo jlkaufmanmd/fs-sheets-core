@@ -1255,85 +1255,19 @@ struct CharacterDetailView: View {
 
     @ViewBuilder
     private func compactSkillRow(_ skill: CharacterSkill) -> some View {
-        VStack(spacing: 4) {
-            // The skill row itself
-            HStack(spacing: 4) {
-                Text(skill.effectiveName)
-                    .font(.caption)
-                    .lineLimit(1)
-                    .onTapGesture {
-                        if expandedSkillIDs.contains(skill.persistentModelID) {
-                            expandedSkillIDs.remove(skill.persistentModelID)
-                        } else {
-                            expandedSkillIDs.insert(skill.persistentModelID)
-                        }
-                    }
-                Spacer()
-                Button {
-                    skill.value -= 1
-                    if skill.value < skill.minimumValue { skill.value = skill.minimumValue }
-                } label: {
-                    Image(systemName: "minus.circle")
-                        .font(.caption2)
-                }
-                .buttonStyle(.plain)
-
-                Text("\(skill.value)")
-                    .font(.caption)
-                    .fontWeight(.semibold)
-                    .frame(minWidth: 20)
-
-                Button {
-                    skill.value += 1
-                } label: {
-                    Image(systemName: "plus.circle")
-                        .font(.caption2)
-                }
-                .buttonStyle(.plain)
-            }
-            .padding(.vertical, 2)
-            .padding(.horizontal, 4)
-            .background(expandedSkillIDs.contains(skill.persistentModelID) ? Color(.systemGray6) : Color.clear)
-            .cornerRadius(6)
-            .contextMenu {
-                Button(role: .destructive) {
-                    modelContext.delete(skill)
-                } label: {
-                    Label("Delete", systemImage: "trash")
-                }
-            }
-
-            // Details appear directly below this skill
-            if expandedSkillIDs.contains(skill.persistentModelID) {
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        Text("Base")
-                            .font(.caption2)
-                        Spacer()
-                        Text("\(skill.value)")
-                            .font(.caption2)
-                            .fontWeight(.bold)
-                    }
-
-                    // Future: Effective value if modifiers exist
-
-                    Divider()
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Keywords")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                        Text(skill.keywordsForRules.joined(separator: ", "))
-                            .font(.caption2)
-                            .lineLimit(nil)
+        SkillRow(
+            skill: skill,
+            isExpanded: Binding(
+                get: { expandedSkillIDs.contains(skill.persistentModelID) },
+                set: { newValue in
+                    if newValue {
+                        expandedSkillIDs.insert(skill.persistentModelID)
+                    } else {
+                        expandedSkillIDs.remove(skill.persistentModelID)
                     }
                 }
-                .padding(6)
-                .background(Color(.systemGray6))
-                .cornerRadius(4)
-            }
-        }
-        .frame(maxHeight: .infinity, alignment: .top)
+            )
+        )
     }
 
     // MARK: - Validation & Actions
