@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import UniformTypeIdentifiers
 
 struct CharacterDetailView: View {
     @Environment(\.modelContext) private var modelContext
@@ -42,6 +43,9 @@ struct CharacterDetailView: View {
     @State private var expandedStatIDs: Set<PersistentIdentifier> = []
     @State private var expandedSkillIDs: Set<PersistentIdentifier> = []
     @State private var expandedGoalRollID: PersistentIdentifier?
+
+    // Drag and drop state
+    @State private var draggedGoalRoll: CharacterGoalRoll?
 
     // Name validation
     @State private var showingDuplicateNameAlert = false
@@ -523,27 +527,35 @@ struct CharacterDetailView: View {
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                     .background(Color.white)
                             } else {
-                                VStack(spacing: 0) {
-                                    ForEach(rolls) { roll in
-                                        goalRollDisclosureRow(roll)
-                                            .contextMenu {
-                                                Button {
-                                                    rollToCopy = roll
-                                                    showingCopyPicker = true
-                                                } label: {
-                                                    Label("Copy to Category...", systemImage: "doc.on.doc")
-                                                }
-
-                                                Button(role: .destructive) {
-                                                    modelContext.delete(roll)
-                                                } label: {
-                                                    Label("Delete", systemImage: "trash")
-                                                }
+                                ForEach(rolls) { roll in
+                                    goalRollDisclosureRow(roll)
+                                        .onDrag {
+                                            self.draggedGoalRoll = roll
+                                            return NSItemProvider(object: roll.persistentModelID.uriRepresentation().absoluteString as NSString)
+                                        }
+                                        .onDrop(of: [.text], delegate: GoalRollDropDelegate(
+                                            item: roll,
+                                            items: rolls,
+                                            category: category,
+                                            draggedItem: $draggedGoalRoll,
+                                            character: character,
+                                            modelContext: modelContext
+                                        ))
+                                        .contentShape(Rectangle())
+                                        .contextMenu {
+                                            Button {
+                                                rollToCopy = roll
+                                                showingCopyPicker = true
+                                            } label: {
+                                                Label("Copy to Category...", systemImage: "doc.on.doc")
                                             }
-                                    }
-                                    .onMove { fromOffsets, toOffset in
-                                        moveGoalRolls(in: category, from: fromOffsets, to: toOffset)
-                                    }
+
+                                            Button(role: .destructive) {
+                                                modelContext.delete(roll)
+                                            } label: {
+                                                Label("Delete", systemImage: "trash")
+                                            }
+                                        }
                                 }
                                 .padding(6)
                                 .background(Color.white)
@@ -1035,7 +1047,7 @@ struct CharacterDetailView: View {
                 .padding(.horizontal, 8)
                 .background(Color(.systemGray5))
 
-                HStack(spacing: 0) {
+                HStack(spacing: 0, alignment: .top) {
                     ForEach(Array(bodyAttributes.enumerated()), id: \.element.id) { index, stat in
                         if index > 0 {
                             Spacer()
@@ -1062,7 +1074,7 @@ struct CharacterDetailView: View {
                 .padding(.horizontal, 8)
                 .background(Color(.systemGray5))
 
-                HStack(spacing: 0) {
+                HStack(spacing: 0, alignment: .top) {
                     ForEach(Array(mindAttributes.enumerated()), id: \.element.id) { index, stat in
                         if index > 0 {
                             Spacer()
@@ -1091,7 +1103,7 @@ struct CharacterDetailView: View {
 
                 VStack(spacing: 6) {
                     // Row 1: Passion, Extrovert, Ego
-                    HStack(spacing: 0) {
+                    HStack(spacing: 0, alignment: .top) {
                         if let passion = spiritAttributes.first(where: { $0.name == "Passion" }) {
                             verticalStatCell(passion)
                             Spacer()
@@ -1106,7 +1118,7 @@ struct CharacterDetailView: View {
                     }
 
                     // Row 2: Calm, Introvert, Faith
-                    HStack(spacing: 0) {
+                    HStack(spacing: 0, alignment: .top) {
                         if let calm = spiritAttributes.first(where: { $0.name == "Calm" }) {
                             verticalStatCell(calm)
                             Spacer()
@@ -1140,7 +1152,7 @@ struct CharacterDetailView: View {
                     .padding(.horizontal, 8)
                     .background(Color(.systemGray5))
 
-                    HStack(spacing: 8) {
+                    HStack(spacing: 8, alignment: .top) {
                         if let psi = occultAttributes.first(where: { $0.name == "Psi" }) {
                             verticalStatCell(psi)
                         }
@@ -1706,16 +1718,6 @@ struct CharacterDetailView: View {
         showingMigrationPicker = false
     }
 
-    private func moveGoalRolls(in category: GoalRollCategory, from source: IndexSet, to destination: Int) {
-        var rolls = goalRollsForCategory(category)
-        rolls.move(fromOffsets: source, toOffset: destination)
-
-        // Update displayOrder for all rolls in this category
-        for (index, roll) in rolls.enumerated() {
-            roll.displayOrder = index
-        }
-    }
-
     private func copyGoalRoll(_ roll: CharacterGoalRoll, to category: GoalRollCategory) {
         // Calculate next displayOrder in target category
         let existingRollsInCategory = character.goalRolls.filter { $0.category?.persistentModelID == category.persistentModelID }
@@ -1737,5 +1739,44 @@ struct CharacterDetailView: View {
 
         rollToCopy = nil
         showingCopyPicker = false
+    }
+}
+
+// MARK: - Goal Roll Drop Delegate
+struct GoalRollDropDelegate: DropDelegate {
+    let item: CharacterGoalRoll
+    let items: [CharacterGoalRoll]
+    let category: GoalRollCategory?
+    @Binding var draggedItem: CharacterGoalRoll?
+    let character: RPGCharacter
+    let modelContext: ModelContext
+
+    func performDrop(info: DropInfo) -> Bool {
+        draggedItem = nil
+        return true
+    }
+
+    func dropEntered(info: DropInfo) {
+        guard let draggedItem = draggedItem,
+              draggedItem.persistentModelID != item.persistentModelID else { return }
+
+        // Find indices
+        guard let fromIndex = items.firstIndex(where: { $0.persistentModelID == draggedItem.persistentModelID }),
+              let toIndex = items.firstIndex(where: { $0.persistentModelID == item.persistentModelID }) else { return }
+
+        // Get all rolls in this category
+        let categoryRolls = character.goalRolls.filter { $0.category?.persistentModelID == category?.persistentModelID }
+
+        // Reorder
+        var reorderedRolls = categoryRolls
+        let movedRoll = reorderedRolls.remove(at: fromIndex)
+        reorderedRolls.insert(movedRoll, at: toIndex)
+
+        // Update display orders
+        for (index, roll) in reorderedRolls.enumerated() {
+            roll.displayOrder = index
+        }
+
+        try? modelContext.save()
     }
 }
