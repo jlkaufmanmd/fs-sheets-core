@@ -210,16 +210,22 @@ struct AddGoalRollView: View {
             characterSkill: learnedSkill
         )
 
-        // Insert into context first
-        modelContext.insert(roll)
-
-        // Then set relationships and append
+        // Set category and order first
         roll.category = category
         roll.displayOrder = maxOrder + 1
+
+        // Insert into context
+        modelContext.insert(roll)
+
+        // Append to character's goal rolls array
         character.goalRolls.append(roll)
 
-        // Explicitly save to ensure persistence
-        try? modelContext.save()
+        // Save the context
+        do {
+            try modelContext.save()
+        } catch {
+            print("Error saving goal roll: \(error)")
+        }
 
         isPresented = false
     }
