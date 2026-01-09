@@ -1,0 +1,528 @@
+# Fading Suns Character Sheet - Project Documentation
+
+## Project Overview
+
+**Fading Suns Character Sheet** is a comprehensive iOS (and eventually macOS) application for managing characters in the Fading Suns tabletop RPG. The app provides character creation, stat tracking, skill management, combat metrics, goal rolls, and extensive customization capabilities.
+
+### Key Differentiators
+- **Template-based content system** with three tiers (local, character override, imported/campaign)
+- **Highly customizable page layouts** allowing users to design their own character sheets
+- **Extensible content framework** supporting 10+ different modifier/effect types
+- **Export/import functionality** for sharing templates and characters
+- **CloudKit-ready architecture** designed for future multi-user campaign collaboration
+
+## Development Philosophy
+
+This is a **fresh start** rebuild of the application with proper architectural foundations. Previous iterations were built:
+- Without comprehensive planning or documentation
+- Without consideration of future multi-user/campaign features
+- With monolithic views that hit compiler limits (1,500+ line files)
+- With hardcoded templates and limited extensibility
+
+This rebuild prioritizes:
+- **Architecture first** - Proper planning before implementation
+- **Incremental delivery** - Build in phases, test frequently
+- **Future-ready design** - Local-first, but CloudKit-ready
+- **Maintainability** - Section-based views, clear separation of concerns
+- **Extensibility** - Plugin pattern for new content types
+
+## Project Goals & Scope
+
+### Phase 1: Local-First Foundation (12-16 weeks)
+**Primary Goal:** Build a fully-featured, local-only iOS app with proper architecture
+
+**Core Features:**
+- Character creation and management (duplicate, delete)
+- Comprehensive stat tracking (attributes, skills, combat metrics, goal rolls)
+- Template system with three tiers:
+  - **Local templates** - User's personal library
+  - **Character overrides** - Character-specific branches from templates
+  - **Imported templates** - Shared libraries from other users (via export/import)
+- Export/import functionality for:
+  - Template libraries (skills, lores, combat maneuvers, etc.)
+  - Individual characters
+  - Collections of characters
+- Basic page customization (2-3 predefined layouts, show/hide sections)
+- Content expansion framework supporting:
+  - Existing: Stats, attributes, natural skills, learned skills, lores, tongues, goal rolls, combat metrics
+  - New: Benefices, afflictions, psi effects, theurgical rituals, combat maneuvers (armed/unarmed/ranged), equipment, numinous investments
+
+**Platform:**
+- iOS 17+ (iPhone and iPad)
+- SwiftUI + SwiftData
+- Local persistence only (no iCloud/CloudKit yet)
+
+**Success Criteria:**
+- All views under 400 lines (section-based architecture)
+- Can add new content types in 3-5 days each
+- Export/import works reliably
+- App performs well on iPhone SE through iPad Pro
+- Data model is CloudKit-ready (proper relationships, ownership patterns)
+
+### Phase 2: CloudKit & Real-Time Collaboration (8-12 weeks, future)
+**Primary Goal:** Add multi-user campaigns with iCloud sync
+
+**Features:**
+- User authentication and identity
+- Campaign creation and hosting
+- Multi-user campaign membership (host vs player roles)
+- Campaign-scoped template libraries (shared across all campaign members)
+- Real-time sync across devices
+- Conflict resolution for simultaneous edits
+- Offline queue management
+
+**Note:** Phase 2 is NOT in scope for initial development. Phase 1 architecture is designed to make Phase 2 easier, but we will NOT implement CloudKit until Phase 1 is complete and validated.
+
+### Phase 3: Advanced Customization & macOS (6-8 weeks, future)
+**Primary Goal:** Full page builder and macOS optimization
+
+**Features:**
+- Drag-and-drop page designer
+- Custom styling and formatting options
+- Multi-window support on macOS
+- Keyboard shortcuts and menu bar integration
+- Optimized layouts for large screens
+- Advanced filtering and organization
+
+**Note:** Phase 3 builds on Phase 1 & 2. Initial Phase 1 will support macOS with basic adaptive layouts, but advanced Mac features are deferred.
+
+## Platform Strategy: iOS First, macOS Later
+
+### Initial Release: iOS 17+ (Phase 1)
+**iPhone:**
+- Single-column layout
+- 2-3 predefined page templates
+- Essential information prioritized
+- Minimal customization (show/hide sections)
+
+**iPad:**
+- Two-column layout where appropriate
+- Better use of horizontal space
+- More sections visible simultaneously
+- Moderate customization (section reordering)
+
+**Why iOS First:**
+1. Primary audience (most tabletop gamers use phones/tablets at the table)
+2. Smaller screens force good information hierarchy decisions
+3. Faster development and testing
+4. Easier to expand to Mac than compress Mac to iOS
+
+### Future: macOS Support (Phase 3)
+**Mac-specific enhancements:**
+- NavigationSplitView (sidebar + detail)
+- Multi-window support (character list in one window, details in another)
+- Full page customization builder
+- Keyboard shortcuts
+- Menu bar integration
+- Unlimited sections/pages (no space constraints)
+
+**Technical approach:**
+- Same SwiftUI codebase
+- Use `#if os(macOS)` for platform-specific UI
+- Environment size classes for responsive layouts
+- Separate view modifiers for Mac vs iOS behavior
+
+## Technical Architecture
+
+### Tech Stack
+- **Language:** Swift 5.10+
+- **UI Framework:** SwiftUI (iOS 17+)
+- **Persistence:** SwiftData (CloudKit-ready)
+- **Minimum Target:** iOS 17.0
+- **Platforms:** iOS (iPhone, iPad), future macOS 14+
+
+### Data Model Principles
+
+**Core Concepts:**
+1. **Character** - Root aggregate owning all related data (stats, skills, rolls, etc.)
+2. **Template** - Reusable definitions (skill templates, combat metric templates, etc.)
+3. **Instance** - Character-specific instances of templates (can override template values)
+4. **Library** - Container for templates (local or imported)
+
+**Relationship Patterns:**
+- **Cascade delete** - Deleting character deletes all owned data
+- **Explicit inverses** - All relationships have `inverse:` parameter (CloudKit requirement)
+- **Optional relationships** - Templates are optional (character can have override-only instances)
+- **Ownership tracking** - Every template has a `templateScope` indicating local vs imported
+
+**CloudKit-Ready Design:**
+Even though Phase 1 is local-only, data models must follow CloudKit best practices:
+- No unsupported types (only String, Int, Double, Bool, Date, Data, UUID)
+- Relationships use CloudKit-compatible patterns
+- Unique identifiers for all entities
+- Owner/creator tracking (even if not used in Phase 1)
+- Audit fields (createdDate, modifiedDate) for future sync
+
+**Template System Architecture:**
+
+```
+┌─────────────────────────────────────────────────┐
+│                  Character                       │
+│  - name, description, traits, etc.              │
+└──────────────────┬──────────────────────────────┘
+                   │
+      ┌────────────┼────────────┐
+      ▼            ▼            ▼
+   Stats      Skills      GoalRolls
+      │            │            │
+      └─────┬──────┴─────┬──────┘
+            ▼            ▼
+     StatTemplate  SkillTemplate
+            │            │
+            └─────┬──────┘
+                  ▼
+         TemplateLibrary
+         (Local or Imported)
+```
+
+**Three-Tier Template System:**
+
+1. **Local Templates** (scope: `.local`)
+   - User's personal library
+   - Created by user in-app
+   - Stored in user's local database
+   - Can be exported to share with others
+
+2. **Character Overrides** (scope: `.characterOverride`)
+   - Character-specific branch from template
+   - Not saved back to any library
+   - Exists only for that character
+   - Example: Character has "Dodge +2" while template says "Dodge"
+
+3. **Imported Templates** (scope: `.imported`, Phase 1) / **Campaign Templates** (scope: `.campaign`, Phase 2)
+   - Phase 1: Imported from another user's export file
+   - Phase 2: Shared campaign library (real-time sync)
+   - Read-only reference (can't edit original)
+   - Can create character override to branch from imported template
+
+**Implementation Pattern:**
+```swift
+enum TemplateScope: String, Codable {
+    case local           // User's personal library
+    case characterOverride  // Character-specific branch
+    case imported        // Phase 1: From export file
+    case campaign        // Phase 2: Shared campaign library (future)
+}
+
+@Model
+class SkillTemplate {
+    var name: String
+    var templateScope: TemplateScope
+    var sourceLibraryID: UUID?  // Tracks origin for imported templates
+    var createdDate: Date
+    var modifiedDate: Date
+
+    // Relationship to library (nil for character overrides)
+    var library: TemplateLibrary?
+}
+
+@Model
+class CharacterSkill {
+    // Reference to template (may be local, imported, or nil for override-only)
+    var template: SkillTemplate?
+
+    // Override values (used when different from template)
+    var overrideName: String?
+    var overrideValue: Int?
+
+    // Computed properties return template value or override
+    var effectiveName: String {
+        overrideName ?? template?.name ?? "Unknown"
+    }
+}
+```
+
+### View Architecture Principles
+
+**Section-Based Organization:**
+All detail views must be broken into logical sections, each in its own file.
+
+**Example: CharacterDetailView**
+```
+CharacterDetailView.swift (< 400 lines)
+├── CharacterInfoSection.swift (~100 lines)
+├── AttributesSection.swift (~150 lines)
+├── SkillsSection.swift (~200 lines)
+├── GoalRollsSection.swift (~150 lines)
+├── CombatMetricsSection.swift (~100 lines)
+└── TraitsSection.swift (~80 lines)
+```
+
+**Rules:**
+- **Main detail view** < 400 lines (coordinator, state management, modifiers)
+- **Section files** < 250 lines each
+- **Reusable components** < 150 lines (StatCell, SkillRow, etc.)
+- **Edit views** < 200 lines
+
+**Component Hierarchy:**
+```
+View
+├── Section (logical grouping, e.g., "Skills")
+│   ├── Row (individual item, e.g., "Dodge")
+│   │   └── Cell (atomic UI, e.g., value stepper)
+│   └── Header/Footer
+└── Modifiers (alerts, sheets, navigation)
+```
+
+**State Management:**
+- **@State** - Local view state (UI-only, doesn't persist)
+- **@Bindable** - Direct binding to SwiftData models (for edits)
+- **@Query** - Fetching data from SwiftData
+- **@Environment(\.modelContext)** - Database operations (insert, delete)
+- **No ViewModels in Phase 1** - Keep it simple, views talk directly to models
+- **Phase 2 consideration** - May introduce ViewModels for sync/conflict handling
+
+### Content Expansion Framework
+
+**Goal:** Add new content types (benefices, rituals, equipment, etc.) in 3-5 days each, not 2-3 weeks.
+
+**Strategy:**
+1. **Template Protocol** - All templates conform to common protocol
+2. **Generic Components** - Reusable UI for template-based content
+3. **Type Registry** - Central registration of content types
+4. **Formula Engine** - Shared calculation system for effects/modifiers
+
+**Template Protocol Example:**
+```swift
+protocol CharacterTemplate {
+    var name: String { get }
+    var templateScope: TemplateScope { get }
+    var keywords: [String] { get }
+    var sourceLibraryID: UUID? { get }
+}
+
+protocol CharacterInstance {
+    associatedtype Template: CharacterTemplate
+    var template: Template? { get }
+    var overrideName: String? { get }
+    var effectiveName: String { get }
+}
+```
+
+**Generic Template Picker:**
+```swift
+struct TemplatePickerView<T: CharacterTemplate>: View {
+    let availableTemplates: [T]
+    let onSelect: (T) -> Void
+
+    // Generic picker works for any template type
+}
+```
+
+**Content Type Registry:**
+```swift
+enum ContentType: String, CaseIterable {
+    case attribute, naturalSkill, learnedSkill, lore, tongue
+    case benefice, affliction, psiEffect, theurgicalRitual
+    case armedCombatManeuver, unarmedCombatManeuver, rangedCombatManeuver
+    case equipment, numinousInvestment
+    case goalRoll, combatMetric
+
+    var displayName: String { /* ... */ }
+    var iconName: String { /* ... */ }
+}
+```
+
+**Adding New Content Type (Example: Benefices):**
+1. Create `BeneficeTemplate` model (conform to `CharacterTemplate`)
+2. Create `CharacterBenefice` model (conform to `CharacterInstance`)
+3. Add to `ContentType` enum
+4. Create `BeneficeSection` view (copy pattern from `SkillsSection`)
+5. Add section to `CharacterDetailView`
+6. Add to export/import logic
+7. Done! (3-5 days of work)
+
+### Export/Import System
+
+**Purpose:** Share templates and characters without requiring CloudKit/iCloud.
+
+**Format:** JSON files with `.fstemplate` or `.fscharacter` extensions
+
+**Export Capabilities:**
+1. **Template Library Export** (`.fstemplate`)
+   - All skills, lores, tongues, etc. from user's library
+   - Can export entire library or filtered subset
+   - Includes metadata (creator, created date, version)
+
+2. **Character Export** (`.fscharacter`)
+   - Complete character with all stats, skills, rolls, etc.
+   - Includes embedded template data (for templates with overrides)
+   - Can export single character or multiple
+
+**Import Behavior:**
+1. **Import Template Library:**
+   - Templates imported with `templateScope = .imported`
+   - Name conflicts: Offer to rename or skip
+   - Track `sourceLibraryID` for provenance
+
+2. **Import Character:**
+   - Character's templates are imported as `.imported` scope
+   - Character's overrides preserved as `.characterOverride`
+   - User becomes local owner of imported character
+
+**File Format Structure:**
+```json
+{
+  "formatVersion": "1.0",
+  "exportType": "templateLibrary",
+  "exportDate": "2026-01-09T10:30:00Z",
+  "creator": "Optional Creator Name",
+  "templates": [
+    {
+      "type": "skill",
+      "name": "Dodge",
+      "category": "Combat",
+      "keywords": ["defense", "agility"],
+      "description": "Avoid attacks"
+    }
+  ]
+}
+```
+
+**UI Integration:**
+- Share sheet for exports (standard iOS share)
+- Document picker for imports
+- Preview before importing (show what will be added)
+- Undo support for imports (in case of mistakes)
+
+## Development Workflow
+
+### Planning Process
+1. **Architecture docs first** (this file + rules.md)
+2. **Plan Mode for major features** - Use Claude Code's Plan Mode to design implementation before coding
+3. **Incremental implementation** - Build one section/feature at a time
+4. **Test after each increment** - Verify functionality before moving on
+5. **Commit frequently** - Small, focused commits with clear messages
+
+### Code Organization
+```
+CharacterSheet/
+├── App/
+│   ├── CharacterSheetApp.swift
+│   └── ContentView.swift
+├── Models/
+│   ├── Character/
+│   │   ├── RPGCharacter.swift
+│   │   ├── Stat.swift
+│   │   └── CharacterSkill.swift
+│   ├── Templates/
+│   │   ├── TemplateProtocol.swift
+│   │   ├── SkillTemplate.swift
+│   │   └── TemplateLibrary.swift
+│   └── Export/
+│       └── ExportFormat.swift
+├── Views/
+│   ├── CharacterList/
+│   │   └── CharacterListView.swift
+│   ├── CharacterDetail/
+│   │   ├── CharacterDetailView.swift
+│   │   └── Sections/
+│   │       ├── CharacterInfoSection.swift
+│   │       ├── AttributesSection.swift
+│   │       ├── SkillsSection.swift
+│   │       └── ...
+│   └── Components/
+│       ├── StatCell.swift
+│       ├── SkillRow.swift
+│       └── TemplatePickerView.swift
+├── Services/
+│   ├── ExportService.swift
+│   └── ImportService.swift
+└── Utilities/
+    ├── FormulaEngine.swift
+    └── Extensions/
+```
+
+### Git Workflow
+- **Main branch** - Stable, deployable code
+- **Feature branches** - `claude/feature-name-SESSION_ID`
+- **Commit messages** - Follow convention: "Add X", "Fix Y", "Refactor Z"
+- **Push after each working feature** - Keep remote in sync
+
+### Testing Strategy (Phase 1)
+- Manual testing in iOS Simulator (iPhone SE, iPhone 15, iPad Pro)
+- Export/import validation (round-trip testing)
+- Data migration testing (if models change)
+- Phase 2+ will add unit tests for sync/conflict logic
+
+## Key Design Decisions
+
+### Decision: Local-First, CloudKit-Ready
+**Rationale:** CloudKit adds 40-50% to timeline. Export/import provides 80% of value (sharing) with 20% of complexity. Build CloudKit-ready architecture but don't implement sync until Phase 2.
+
+### Decision: iOS First, macOS Later
+**Rationale:** Mobile is primary use case (at the gaming table). Small screens force good design decisions. Expanding to Mac is easier than compressing Mac to iOS.
+
+### Decision: Section-Based Views, Not Monolithic
+**Rationale:** Previous 1,500-line view hit compiler limits and was unmaintainable. Section-based architecture keeps files small, testable, and reusable.
+
+### Decision: Template Protocol Pattern for Content Expansion
+**Rationale:** Need to support 10+ content types. Hardcoding each type individually would result in massive code duplication. Protocol + generics allows adding new types in days, not weeks.
+
+### Decision: JSON Export Format, Not Proprietary Binary
+**Rationale:** JSON is human-readable, debuggable, and extensible. Easy to version and migrate. Users can manually edit exports if needed.
+
+### Decision: No ViewModels in Phase 1
+**Rationale:** SwiftUI + SwiftData work well together with @Bindable. ViewModels add complexity without clear benefit for local-only app. May add in Phase 2 for sync orchestration.
+
+## Success Metrics
+
+**Phase 1 Complete When:**
+- [ ] All character functionality working (create, edit, delete, duplicate)
+- [ ] All content types implemented (stats, skills, rolls, combat, + 3 new types)
+- [ ] Export/import working reliably
+- [ ] All views under 400 lines
+- [ ] App runs smoothly on iPhone SE through iPad Pro
+- [ ] No compiler errors or warnings
+- [ ] Data model validated as CloudKit-ready
+- [ ] User can create custom template library and share with others
+
+**Quality Bars:**
+- Build time < 30 seconds
+- App launch < 2 seconds
+- Smooth scrolling (60fps) in character detail view
+- Zero data loss scenarios
+- Graceful handling of import errors
+
+## Future Considerations (Not Phase 1)
+
+### Phase 2: CloudKit
+- User authentication via iCloud
+- Campaign model with host/player roles
+- CKShare for campaign sharing
+- Real-time sync with conflict resolution
+- Offline queue management
+- Campaign-scoped template libraries
+
+### Phase 3: Advanced Features
+- Full page customization builder (drag-and-drop)
+- Custom formulas and calculations
+- Dice rolling integration
+- Character portraits and images
+- PDF export
+- Print layouts
+
+### Phase 4+: Community Features
+- Public template marketplace
+- Ratings and reviews for templates
+- Featured content from community
+- Official Fading Suns content integration (if licensed)
+
+## Questions & Decisions Needed
+
+### Open Questions
+*(To be filled in during development)*
+
+### Decision Log
+*(Track major decisions made during implementation)*
+
+## References & Resources
+
+- [SwiftUI Documentation](https://developer.apple.com/documentation/swiftui)
+- [SwiftData Documentation](https://developer.apple.com/documentation/swiftdata)
+- [CloudKit Best Practices](https://developer.apple.com/documentation/cloudkit) (for Phase 2)
+- [Fading Suns RPG Rules](https://www.drivethrurpg.com/product/151430/Fading-Suns-4th-Edition-Beta-Playtest) (reference for game mechanics)
+
+## Revision History
+
+- 2026-01-09: Initial documentation created for fresh start rebuild
