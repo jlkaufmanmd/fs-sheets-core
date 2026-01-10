@@ -601,6 +601,14 @@ With Effects/Gear:
 - Some effects add bonus actions (e.g., "+1 Physical Action" allows 2 physical + 1 general at -0)
 ```
 
+**Physical Actions:**
+- Baseline character: 0 physical actions (must use general actions for physical tasks)
+- Effects/gear can grant additional physical actions (e.g., "+1 Physical Action")
+- **Action-consuming maneuvers:** Some maneuvers cost physical actions when declared active
+  - Example: Maneuver costs 1 physical action but provides +2 to Attack rolls
+  - User declares active at beginning of turn → loses 1 physical action, gains modifier
+  - Budget must account for both bonus actions granted AND actions consumed by active maneuvers
+
 **Mental Actions:**
 - Baseline character: 0 mental actions (must use general actions for occult effects)
 - Effects/gear can grant additional mental actions (e.g., "+2 Mental Actions")
@@ -614,6 +622,32 @@ With Effects/Gear:
 4. Multiple action penalty automatically applied based on mode and active effects
 5. Mental action allocation UI with validation (can't exceed available)
 6. Real-time recalculation when effects activated/deactivated
+
+**Initiative System (Phase 2A Feature):**
+
+Initiative is a special roll type that determines turn order. Unlike other rolls, it's dynamic based on the character's intended action for that turn.
+
+**Base Calculation:**
+- Initiative = Base skill value + modifiers from active effects/gear
+- The base skill depends on what action the character will take that turn:
+  - Melee attack → uses melee combat skill
+  - Ranged attack → uses ranged combat skill
+  - Psi effect → uses relevant occult skill
+  - Social action → uses relevant social skill
+
+**Multiple Initiative Display:**
+- Phase 2A should support showing multiple pre-calculated initiatives simultaneously
+- **Different skills, same gear/effects:**
+  - Show "Initiative (Melee): 12" and "Initiative (Ranged): 10" side-by-side
+  - User can quickly reference without recalculating
+- **Same skill, different equipment:**
+  - Show "Initiative (Melee, Sword): 12" and "Initiative (Melee, Axe): 11"
+  - Accounts for different weapon modifiers
+- **Use case:** Player can see all their options at a glance and make tactical decisions
+
+**Implementation Notes:**
+- Phase 1: Single initiative based on selected skill + active effects
+- Phase 2A: Support multiple concurrent initiative displays with different configurations
 
 **Example Scenario:**
 ```
