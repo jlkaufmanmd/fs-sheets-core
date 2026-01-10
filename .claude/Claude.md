@@ -5,11 +5,12 @@
 **Fading Suns Character Sheet** is a comprehensive iOS (and eventually macOS) application for managing characters in the Fading Suns tabletop RPG. The app provides character creation, stat tracking, skill management, combat metrics, goal rolls, and extensive customization capabilities.
 
 ### Key Differentiators
-- **Template-based content system** with three tiers (local, character override, imported/campaign)
+- **Template-based content system** with three tiers (local, character override, imported)
+- **Victory Points modifier system** for formula-based effect calculations
+- **Loadouts** for saving and switching between character configurations
 - **Highly customizable page layouts** allowing users to design their own character sheets
 - **Extensible content framework** supporting 10+ different modifier/effect types
-- **Export/import functionality** for sharing templates and characters
-- **CloudKit-ready architecture** designed for future multi-user campaign collaboration
+- **Robust export/import functionality** for sharing templates, characters, and custom formatting
 
 ## Development Philosophy
 
@@ -22,7 +23,7 @@ This is a **fresh start** rebuild of the application with proper architectural f
 This rebuild prioritizes:
 - **Architecture first** - Proper planning before implementation
 - **Incremental delivery** - Build in phases, test frequently
-- **Future-ready design** - Local-first, but CloudKit-ready
+- **Future-ready design** - Local-first with extensible architecture
 - **Maintainability** - Section-based views, clear separation of concerns
 - **Extensibility** - Plugin pattern for new content types
 
@@ -65,7 +66,7 @@ This rebuild prioritizes:
   - Save snapshots of character's current modifier state (active effects, equipped gear, etc.)
   - Quick switching between frequently-used configurations
   - Create, rename, and delete loadouts
-  - Foundation for Phase 3 advanced customization features
+  - Foundation for Phase 2B advanced customization features
 - **Basic page customization:**
   - Reorder goal rolls and skills within sections (drag handles in edit mode)
   - Show/hide entire sections (toggle switches)
@@ -94,10 +95,10 @@ This rebuild prioritizes:
 **Success Criteria:**
 - All views under 400 lines (section-based architecture)
 - Can add new content types in 3-5 days each
-- Export/import works reliably
+- Export/import works reliably with proper conflict resolution
 - App performs well on iPhone SE through iPad Pro
-- Data model is CloudKit-ready (proper relationships, ownership patterns)
-- **Architecture enables Phase 2 features without refactoring core models**
+- Data model is extensible (proper relationships, ownership patterns, optional fields for future features)
+- **Architecture enables Phase 2A/2B features without refactoring core models**
 
 ### Phase 2A: Advanced Effects System (6-8 weeks, future)
 **Primary Goal:** Add complex modifier calculations and per-page state management
@@ -178,7 +179,7 @@ This rebuild prioritizes:
 3. Faster development and testing
 4. Easier to expand to Mac than compress Mac to iOS
 
-### Future: macOS Support (Phase 3)
+### Future: macOS Support (Phase 2B)
 **Mac-specific enhancements:**
 - NavigationSplitView (sidebar + detail)
 - Multi-window support (character list in one window, details in another)
@@ -227,12 +228,12 @@ This rebuild prioritizes:
 
 Even though Phase 1 implements simple features, data models must support Phase 2A complexity without refactoring:
 
-**CloudKit-Ready (Phase 2B):**
-- No unsupported types (only String, Int, Double, Bool, Date, Data, UUID)
-- Relationships use CloudKit-compatible patterns
-- Unique identifiers for all entities
-- Owner/creator tracking (even if not used in Phase 1)
-- Audit fields (createdDate, modifiedDate) for future sync
+**Extensible Data Model Principles:**
+- Use simple, portable types (String, Int, Double, Bool, Date, Data, UUID)
+- All relationships have explicit inverses (SwiftData best practice)
+- Unique identifiers for all entities (enables export/import tracking)
+- Owner/creator tracking for all user-generated content
+- Audit fields (createdDate, modifiedDate, version, lastModifiedBy) for import conflict resolution
 
 **Phase 2A-Ready (Advanced Effects):**
 - Effect models include optional fields for modes (unused in Phase 1, populated in Phase 2A):
