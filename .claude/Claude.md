@@ -44,39 +44,52 @@ This rebuild prioritizes:
   - Template libraries (skills, lores, combat maneuvers, etc.)
   - Individual characters
   - Collections of characters
+  - Conflict resolution on import: Replace existing, Skip, or Rename
+  - Version tracking and "last modified by User X" metadata
 - **Basic effects system:**
-  - Effect types: Psi effects, theurgical rituals, combat maneuvers (armed/unarmed/ranged), equipment/gear
+  - Effect types: Psi effects, theurgical rituals, combat maneuvers (armed/unarmed/ranged), equipment/gear, numinous investments
   - Simple active/inactive toggles (global state shared across all pages)
-  - Static modifiers (e.g., "+2 to Attack", "-1 to Defense")
+  - Two modifier types:
+    - **Static modifiers:** Fixed values (e.g., "+2 to Attack", "-1 to Defense")
+    - **Victory Points (VP) modifiers:** Formula-based (e.g., "+2 + VP" where VP = (RollValue - 8) / 3, rounded down)
   - Benefices and afflictions (permanent modifiers, no toggles needed)
 - **Basic modifier calculation engine:**
   - Calculates effective values (base + all active modifiers)
+  - For VP-based effects: Assumes roll of 8 (standard for sustained effects)
   - Shows modifier breakdown in detail view
   - Displays as "base (effective)" when modified, or just "base" when not
 - **General Traits display:**
   - Non-numeric effects (Flight, Immunity to wound penalties, etc.)
   - Displayed in dedicated section when effects are active
+- **Loadouts system:**
+  - Save snapshots of character's current modifier state (active effects, equipped gear, etc.)
+  - Quick switching between frequently-used configurations
+  - Create, rename, and delete loadouts
+  - Foundation for Phase 3 advanced customization features
 - **Basic page customization:**
   - Reorder goal rolls and skills within sections (drag handles in edit mode)
   - Show/hide entire sections (toggle switches)
   - Reorder sections (simple drag-to-reorder)
   - Save 2-3 page layouts (different section arrangements)
 - Content expansion framework supporting:
-  - Existing: Stats, attributes, natural skills, learned skills, lores, tongues, goal rolls, combat metrics
-  - New in Phase 1: Benefices, afflictions, psi effects (basic), theurgical rituals (basic), combat maneuvers (basic), equipment
+  - **Core content types:** Attributes, natural skills, learned skills, lores, tongues, goal rolls, combat metrics
+  - **New effect types in Phase 1:** Benefices, afflictions, psi effects (basic), theurgical rituals (basic), combat maneuvers (basic), equipment, numinous investments
 
 **Platform:**
 - iOS 17+ (iPhone and iPad)
 - SwiftUI + SwiftData
-- Local persistence only (no iCloud/CloudKit yet)
+- Local persistence with robust export/import for sharing
 
-**What's Deferred to Phase 2:**
-- ❌ Mode systems (named modes, stance selection, mental action allocation)
+**What's Deferred to Phase 2A:**
+- ❌ Mode systems:
+  - Named modes (e.g., Aggressive/Balanced/Defensive with different modifier sets)
+  - Numeric modes (e.g., allocate X mental actions for X-scaled modifiers)
+  - Dual-mode effects (combined named + numeric modes)
 - ❌ Conditional modifiers (e.g., "+2 when inventing")
 - ❌ Per-page state (different active effects on different custom pages)
 - ❌ Custom dashboard pages (filtered item subsets) - only section reordering in Phase 1
 - ❌ Multiple action penalties system
-- ❌ Variable modifier calculations based on inputs
+- ❌ Mental/physical action allocation and budgeting
 
 **Success Criteria:**
 - All views under 400 lines (section-based architecture)
@@ -91,8 +104,9 @@ This rebuild prioritizes:
 
 **Features:**
 - **Mode systems:**
-  - Named modes for effects (e.g., combat stance: Attack/Balanced/Defensive)
-  - Numeric inputs for variable effects (e.g., mental actions allocated to psi effect)
+  - **Named modes:** Effects with discrete options (e.g., Aggressive/Balanced/Defensive stance)
+  - **Numeric modes:** Effects that scale with resource allocation (e.g., X mental actions → +X modifier)
+  - **Dual-mode effects:** Some effects combine both (e.g., choose named mode AND allocate mental actions, with each mode producing different X-scaled effects)
   - Per-effect mode selection with different modifier sets per mode
 - **Mental action allocation:**
   - Character has total mental action budget (base + modifiers from effects/gear)
@@ -113,42 +127,35 @@ This rebuild prioritizes:
   - Create multiple custom pages (e.g., "Melee Combat", "Ranged Combat", "Social")
   - Each page shows filtered subset of items (selected goal rolls, metrics, etc.)
   - Per-page active state (different effects active on different pages)
-  - Per-page mode selections (different stances on melee vs ranged page)
+  - Per-page mode selections (different configurations per page)
   - Dropdown menus for quick effect toggling on dashboard pages
+  - **Visual flagging:** Elements showing non-global state configurations are visually marked (shaded/colored) to indicate they assume different equipment or modes
 - **Advanced modifier display:**
   - Full breakdown in detail view showing all contributing effects
   - Separate display for base, permanent modifiers (benefices/afflictions), and toggleable effects
   - Clear indication of mode-dependent and conditional modifiers
+- **Loadouts integration:**
+  - Loadouts (created in Phase 1) can be assigned per custom page
+  - Custom formatted text blocks can reference different loadouts for live stat display
+  - Foundation for "word processor"-style custom views with loadout-specific live elements
 
 **Note:** Phase 2A builds directly on Phase 1's modifier engine. The architecture from Phase 1 must enable these features without refactoring core models.
 
-### Phase 2B: CloudKit & Real-Time Collaboration (8-12 weeks, future)
-**Primary Goal:** Add multi-user campaigns with iCloud sync
-
-**Features:**
-- User authentication and identity
-- Campaign creation and hosting
-- Multi-user campaign membership (host vs player roles)
-- Campaign-scoped template libraries (shared across all campaign members)
-- Real-time sync across devices
-- Conflict resolution for simultaneous edits
-- Offline queue management
-
-**Note:** Phase 2B is independent of Phase 2A. Can be done in either order based on priority.
-
-### Phase 3: Advanced Customization & macOS (6-8 weeks, future)
+### Phase 2B: Advanced Customization & macOS (6-8 weeks, future)
 **Primary Goal:** Full page builder and macOS optimization
 
 **Features:**
 - Drag-and-drop page designer (beyond Phase 2A's filtered dashboards)
 - Multi-column custom layouts
 - Custom styling and formatting options per section
+- "Word processor"-style custom views with live elements referencing loadouts
 - Multi-window support on macOS
 - Keyboard shortcuts and menu bar integration
 - Optimized layouts for large screens
 - Advanced filtering and organization
+- Export/import of custom formatting setups (shareable with other users)
 
-**Note:** Phase 3 builds on Phase 1 & 2A. Initial Phase 1 will support macOS with basic adaptive layouts, but advanced Mac features are deferred.
+**Note:** Phase 2B builds on Phase 1 & 2A. Initial Phase 1 will support macOS with basic adaptive layouts, but advanced Mac features are deferred.
 
 ## Platform Strategy: iOS First, macOS Later
 
@@ -191,23 +198,30 @@ This rebuild prioritizes:
 ### Tech Stack
 - **Language:** Swift 5.10+
 - **UI Framework:** SwiftUI (iOS 17+)
-- **Persistence:** SwiftData (CloudKit-ready)
+- **Persistence:** SwiftData
 - **Minimum Target:** iOS 17.0
 - **Platforms:** iOS (iPhone, iPad), future macOS 14+
 
 ### Data Model Principles
 
 **Core Concepts:**
-1. **Character** - Root aggregate owning all related data (stats, skills, rolls, etc.)
-2. **Template** - Reusable definitions (skill templates, combat metric templates, etc.)
-3. **Instance** - Character-specific instances of templates (can override template values)
-4. **Library** - Container for templates (local or imported)
+1. **Character** - Root aggregate owning all related data
+2. **Stat** - Parent type for all user-defined base values (Attributes, Natural Skills, Learned Skills, Lores, Tongues)
+   - All Stats have: `baseValue` + `modifiers` → `effectiveValue`
+3. **Metric** - Calculated values with formula-based base (e.g., Defense, Initiative, Hit Points)
+   - No user-defined base; calculated from constants + modifiers
+4. **Effect** - Modifiers that can be active/inactive (Psi effects, gear, maneuvers, etc.)
+   - Two types: Static modifiers (+2) or Victory Points modifiers (+2 + VP)
+5. **Loadout** - Saved snapshot of character's modifier state (active effects, equipped gear, modes)
+6. **Template** - Reusable definitions for skills, effects, etc.
+7. **Library** - Container for templates (local or imported)
 
 **Relationship Patterns:**
 - **Cascade delete** - Deleting character deletes all owned data
-- **Explicit inverses** - All relationships have `inverse:` parameter (CloudKit requirement)
+- **Explicit inverses** - All relationships have `inverse:` parameter (SwiftData best practice)
 - **Optional relationships** - Templates are optional (character can have override-only instances)
 - **Ownership tracking** - Every template has a `templateScope` indicating local vs imported
+- **Version tracking** - Templates and characters track version and "last modified by" metadata for import conflict resolution
 
 **Future-Ready Design Philosophy:**
 
@@ -231,23 +245,27 @@ Even though Phase 1 implements simple features, data models must support Phase 2
 
 **Key Principle:** Add optional fields now, populate them later. Avoids breaking changes and data migrations.
 
-**Template System Architecture:**
+**Data Model Hierarchy:**
 
 ```
 ┌─────────────────────────────────────────────────┐
 │                  Character                       │
-│  - name, description, traits, etc.              │
+│  - name, description                            │
+│  - loadouts: [Loadout]                          │
 └──────────────────┬──────────────────────────────┘
                    │
-      ┌────────────┼────────────┐
-      ▼            ▼            ▼
-   Stats      Skills      GoalRolls
-      │            │            │
-      └─────┬──────┴─────┬──────┘
-            ▼            ▼
-     StatTemplate  SkillTemplate
-            │            │
-            └─────┬──────┘
+      ┌────────────┼────────────┬─────────────┐
+      ▼            ▼            ▼             ▼
+   Stats       Metrics      Effects      GoalRolls
+   (Stat)      (Metric)     (Effect)
+      │                         │
+      ├── Attribute             ├── Psi Effect
+      ├── NaturalSkill          ├── Ritual
+      ├── LearnedSkill          ├── Maneuver
+      ├── Lore                  ├── Equipment
+      └── Tongue                └── Numinous Investment
+
+      All reference templates (optional):
                   ▼
          TemplateLibrary
          (Local or Imported)
@@ -267,46 +285,80 @@ Even though Phase 1 implements simple features, data models must support Phase 2
    - Exists only for that character
    - Example: Character has "Dodge +2" while template says "Dodge"
 
-3. **Imported Templates** (scope: `.imported`, Phase 1) / **Campaign Templates** (scope: `.campaign`, Phase 2)
-   - Phase 1: Imported from another user's export file
-   - Phase 2: Shared campaign library (real-time sync)
+3. **Imported Templates** (scope: `.imported`)
+   - Imported from another user's export file
    - Read-only reference (can't edit original)
    - Can create character override to branch from imported template
+   - Tracked with version and "last modified by User X" metadata
 
 **Implementation Pattern:**
 ```swift
 enum TemplateScope: String, Codable {
-    case local           // User's personal library
+    case local              // User's personal library
     case characterOverride  // Character-specific branch
-    case imported        // Phase 1: From export file
-    case campaign        // Phase 2: Shared campaign library (future)
+    case imported           // From another user's export file
+}
+
+enum ModifierType: String, Codable {
+    case static             // Fixed value (e.g., +2)
+    case victoryPoints      // Formula-based (e.g., +2 + VP)
 }
 
 @Model
-class SkillTemplate {
+class Effect {
     var name: String
-    var templateScope: TemplateScope
-    var sourceLibraryID: UUID?  // Tracks origin for imported templates
-    var createdDate: Date
-    var modifiedDate: Date
+    var modifierType: ModifierType
+    var isActive: Bool
 
-    // Relationship to library (nil for character overrides)
-    var library: TemplateLibrary?
+    // For static modifiers
+    var staticValue: Int?
+
+    // For Victory Points modifiers
+    var baseBonus: Int?              // e.g., 2 for Quickening
+    var rollAttribute: String?       // e.g., "Introvert"
+    var rollSkill: String?           // e.g., "Vigor"
+
+    // Future Phase 2A fields (optional, unused in Phase 1)
+    var availableModes: [String]?    // Named modes
+    var mentalActionScaling: Bool?   // Numeric scaling
+    var conditionalDescription: String?
+
+    func calculateModifier(character: Character) -> Int {
+        switch modifierType {
+        case .static:
+            return staticValue ?? 0
+        case .victoryPoints:
+            let base = baseBonus ?? 0
+            // Assume roll of 8 for sustained effects
+            let rollValue = character.getStatValue(rollAttribute) +
+                            character.getStatValue(rollSkill)
+            let vp = (rollValue - 8) / 3  // Integer division (rounded down)
+            return base + vp
+        }
+    }
 }
 
 @Model
-class CharacterSkill {
-    // Reference to template (may be local, imported, or nil for override-only)
-    var template: SkillTemplate?
+class Stat {
+    var name: String
+    var baseValue: Int
+    var character: Character
 
-    // Override values (used when different from template)
-    var overrideName: String?
-    var overrideValue: Int?
-
-    // Computed properties return template value or override
-    var effectiveName: String {
-        overrideName ?? template?.name ?? "Unknown"
+    var effectiveValue: Int {
+        let modifiers = character.activeEffects
+            .filter { $0.appliesTo(stat: self) }
+            .map { $0.calculateModifier(character: character) }
+            .reduce(0, +)
+        return baseValue + modifiers
     }
+}
+
+@Model
+class Loadout {
+    var name: String
+    var activeEffectIDs: Set<UUID>    // Which effects are active
+    var equippedGearIDs: Set<UUID>    // Which equipment is equipped
+    // Phase 2A will add mode selections, mental action allocations
 }
 ```
 
@@ -525,8 +577,8 @@ CharacterSheet/
 
 ## Key Design Decisions
 
-### Decision: Local-First, CloudKit-Ready
-**Rationale:** CloudKit adds 40-50% to timeline. Export/import provides 80% of value (sharing) with 20% of complexity. Build CloudKit-ready architecture but don't implement sync until Phase 2.
+### Decision: Local-First with Export/Import
+**Rationale:** Export/import provides robust sharing functionality without the complexity of real-time sync. Users can share characters, templates, and custom formatting setups via files. Version tracking and conflict resolution on import provides sufficient collaboration support.
 
 ### Decision: iOS First, macOS Later
 **Rationale:** Mobile is primary use case (at the gaming table). Small screens force good design decisions. Expanding to Mac is easier than compressing Mac to iOS.
@@ -564,17 +616,7 @@ CharacterSheet/
 
 ## Future Considerations (Not Phase 1)
 
-### Phase 2: CloudKit
-- User authentication via iCloud
-- Campaign model with host/player roles
-- CKShare for campaign sharing
-- Real-time sync with conflict resolution
-- Offline queue management
-- Campaign-scoped template libraries
-
-### Phase 3: Advanced Features
-- Full page customization builder (drag-and-drop)
-- Custom formulas and calculations
+### Additional Future Features
 - Dice rolling integration
 - Character portraits and images
 - PDF export
@@ -623,32 +665,6 @@ With Effects/Gear:
 5. Mental action allocation UI with validation (can't exceed available)
 6. Real-time recalculation when effects activated/deactivated
 
-**Initiative System (Phase 2A Feature):**
-
-Initiative is a special roll type that determines turn order. Unlike other rolls, it's dynamic based on the character's intended action for that turn.
-
-**Base Calculation:**
-- Initiative = Base skill value + modifiers from active effects/gear
-- The base skill depends on what action the character will take that turn:
-  - Melee attack → uses melee combat skill
-  - Ranged attack → uses ranged combat skill
-  - Psi effect → uses relevant occult skill
-  - Social action → uses relevant social skill
-
-**Multiple Initiative Display:**
-- Phase 2A should support showing multiple pre-calculated initiatives simultaneously
-- **Different skills, same gear/effects:**
-  - Show "Initiative (Melee): 12" and "Initiative (Ranged): 10" side-by-side
-  - User can quickly reference without recalculating
-- **Same skill, different equipment:**
-  - Show "Initiative (Melee, Sword): 12" and "Initiative (Melee, Axe): 11"
-  - Accounts for different weapon modifiers
-- **Use case:** Player can see all their options at a glance and make tactical decisions
-
-**Implementation Notes:**
-- Phase 1: Single initiative based on selected skill + active effects
-- Phase 2A: Support multiple concurrent initiative displays with different configurations
-
 **Example Scenario:**
 ```
 Character Stats:
@@ -668,12 +684,6 @@ Result:
 - Psi Shield active with 2 mental actions allocated (modifier scales with input)
 ```
 
-### Phase 4+: Community Features
-- Public template marketplace
-- Ratings and reviews for templates
-- Featured content from community
-- Official Fading Suns content integration (if licensed)
-
 ## Questions & Decisions Needed
 
 ### Open Questions
@@ -686,8 +696,6 @@ Result:
 
 - [SwiftUI Documentation](https://developer.apple.com/documentation/swiftui)
 - [SwiftData Documentation](https://developer.apple.com/documentation/swiftdata)
-- [CloudKit Best Practices](https://developer.apple.com/documentation/cloudkit) (for Phase 2)
-- [Fading Suns RPG Rules](https://www.drivethrurpg.com/product/151430/Fading-Suns-4th-Edition-Beta-Playtest) (reference for game mechanics)
 
 ## Revision History
 
