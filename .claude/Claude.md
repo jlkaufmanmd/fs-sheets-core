@@ -2,13 +2,16 @@
 
 ## Project Overview
 
-**Fading Suns Character Sheet** is a comprehensive iOS (and eventually macOS) application for managing characters in the Fading Suns tabletop RPG. The app provides character creation, stat tracking, skill management, combat metrics, goal rolls, and extensive customization capabilities.
+**Fading Suns Character Sheet** is a comprehensive iOS (and eventually macOS) application for managing characters in the Fading Suns tabletop RPG. The app provides character creation, stat tracking, skill management, combat metrics, goal rolls, equipment/gear management, combat maneuvers, occult effects (psi powers and theurgical rituals), and extensive customization capabilities.
 
 ### Key Differentiators
 - **Template-based content system** with three tiers (local, character override, imported)
 - **Victory Points modifier system** for formula-based effect calculations
 - **Loadouts** for saving and switching between character configurations
-- **Highly customizable page layouts** allowing users to design their own character sheets
+- **Highly customizable page layouts** allowing users to design custom character sheets, quick reference sheets, and stat blocks for any purpose
+  - Mini word processing environment with live stat elements that update dynamically
+  - Customizable display modes (tooltips vs dropdowns, etc.)
+  - Multiple text blocks with different loadouts for side-by-side comparison
 - **Extensible content framework** supporting 10+ different modifier/effect types
 - **Robust export/import functionality** for sharing templates, characters, and custom formatting
 
@@ -35,7 +38,13 @@ This rebuild prioritizes:
 **Strategy:** Start simple, but architect for future complexity. Build the foundation that enables advanced features (modes, conditionals, per-page state) without requiring refactoring.
 
 **Core Features:**
-- Character creation and management (duplicate, delete)
+- **Character creation and management:**
+  - Main character list page (duplicate, delete)
+  - **Template library management interface** (accessed from main page):
+    - Export/import template libraries
+    - Review, rename, edit, and delete templates
+    - Remove templates with errors or obsolete entries
+    - Libraries organized by element type (skills, lores, tongues, maneuvers, psi/theurgy, equipment, etc.)
 - Comprehensive stat tracking (attributes, skills, combat metrics, goal rolls)
 - Template system with three tiers:
   - **Local templates** - User's personal library
@@ -308,8 +317,27 @@ enum ModifierType: String, Codable {
 @Model
 class Effect {
     var name: String
-    var modifierType: ModifierType
+    var category: String             // e.g., "Psi Power", "Theurgical Ritual", "Maneuver"
     var isActive: Bool
+
+    // Occult effect metadata
+    var level: Int?                  // 1-10 for psi/theurgy effects
+    var type: String?                // Path (Psi) or Paradigm (Theurgy), e.g., "Soma", "Universalist"
+    var equipmentType: String?       // For equipment: "melee weapon", "armor", etc.
+
+    // Effects can have multiple modifiers
+    var modifiers: [EffectModifier]  // Array of modifiers this effect provides
+
+    // Future Phase 2A fields (optional, unused in Phase 1)
+    var availableModes: [String]?    // Named modes
+    var mentalActionScaling: Bool?   // Numeric scaling
+    var conditionalDescription: String?
+}
+
+@Model
+class EffectModifier {
+    var targetStat: String           // Which stat this modifies (e.g., "Attack", "Defense")
+    var modifierType: ModifierType
 
     // For static modifiers
     var staticValue: Int?
@@ -318,11 +346,6 @@ class Effect {
     var baseBonus: Int?              // e.g., 2 for Quickening
     var rollAttribute: String?       // e.g., "Introvert"
     var rollSkill: String?           // e.g., "Vigor"
-
-    // Future Phase 2A fields (optional, unused in Phase 1)
-    var availableModes: [String]?    // Named modes
-    var mentalActionScaling: Bool?   // Numeric scaling
-    var conditionalDescription: String?
 
     func calculateModifier(character: Character) -> Int {
         switch modifierType {
@@ -346,11 +369,12 @@ class Stat {
     var character: Character
 
     var effectiveValue: Int {
-        let modifiers = character.activeEffects
-            .filter { $0.appliesTo(stat: self) }
+        let modifierSum = character.activeEffects
+            .flatMap { $0.modifiers }
+            .filter { $0.targetStat == self.name }
             .map { $0.calculateModifier(character: character) }
             .reduce(0, +)
-        return baseValue + modifiers
+        return baseValue + modifierSum
     }
 }
 
@@ -418,9 +442,20 @@ View
 protocol CharacterTemplate {
     var name: String { get }
     var templateScope: TemplateScope { get }
-    var keywords: [String] { get }
+    var keywords: [String] { get }  // Searchable keywords for rules engine
     var sourceLibraryID: UUID? { get }
 }
+
+// Keyword System (Rules Engine Support):
+// Keywords are automatically generated and include:
+// - name (always)
+// - category (always)
+// - subcategories (if applicable)
+// - level (for occult effects: 1-10)
+// - type (for occult effects: Path/Paradigm; for equipment: "melee weapon", "armor", etc.)
+//
+// Example: "Quickening" psi effect → keywords: ["Quickening", "Psi Power", "Soma", "3"]
+// Example: "Longsword" equipment → keywords: ["Longsword", "Equipment", "Melee Weapon"]
 
 protocol CharacterInstance {
     associatedtype Template: CharacterTemplate
