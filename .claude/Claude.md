@@ -28,8 +28,10 @@ This rebuild prioritizes:
 
 ## Project Goals & Scope
 
-### Phase 1: Local-First Foundation (12-16 weeks)
-**Primary Goal:** Build a fully-featured, local-only iOS app with proper architecture
+### Phase 1: Local-First Foundation (16-20 weeks)
+**Primary Goal:** Build core character sheet with basic modifiers - architecture ready for complex features
+
+**Strategy:** Start simple, but architect for future complexity. Build the foundation that enables advanced features (modes, conditionals, per-page state) without requiring refactoring.
 
 **Core Features:**
 - Character creation and management (duplicate, delete)
@@ -42,15 +44,39 @@ This rebuild prioritizes:
   - Template libraries (skills, lores, combat maneuvers, etc.)
   - Individual characters
   - Collections of characters
-- Basic page customization (2-3 predefined layouts, show/hide sections)
+- **Basic effects system:**
+  - Effect types: Psi effects, theurgical rituals, combat maneuvers (armed/unarmed/ranged), equipment/gear
+  - Simple active/inactive toggles (global state shared across all pages)
+  - Static modifiers (e.g., "+2 to Attack", "-1 to Defense")
+  - Benefices and afflictions (permanent modifiers, no toggles needed)
+- **Basic modifier calculation engine:**
+  - Calculates effective values (base + all active modifiers)
+  - Shows modifier breakdown in detail view
+  - Displays as "base (effective)" when modified, or just "base" when not
+- **General Traits display:**
+  - Non-numeric effects (Flight, Immunity to wound penalties, etc.)
+  - Displayed in dedicated section when effects are active
+- **Basic page customization:**
+  - Reorder goal rolls and skills within sections (drag handles in edit mode)
+  - Show/hide entire sections (toggle switches)
+  - Reorder sections (simple drag-to-reorder)
+  - Save 2-3 page layouts (different section arrangements)
 - Content expansion framework supporting:
   - Existing: Stats, attributes, natural skills, learned skills, lores, tongues, goal rolls, combat metrics
-  - New: Benefices, afflictions, psi effects, theurgical rituals, combat maneuvers (armed/unarmed/ranged), equipment, numinous investments
+  - New in Phase 1: Benefices, afflictions, psi effects (basic), theurgical rituals (basic), combat maneuvers (basic), equipment
 
 **Platform:**
 - iOS 17+ (iPhone and iPad)
 - SwiftUI + SwiftData
 - Local persistence only (no iCloud/CloudKit yet)
+
+**What's Deferred to Phase 2:**
+- ❌ Mode systems (named modes, stance selection, mental action allocation)
+- ❌ Conditional modifiers (e.g., "+2 when inventing")
+- ❌ Per-page state (different active effects on different custom pages)
+- ❌ Custom dashboard pages (filtered item subsets) - only section reordering in Phase 1
+- ❌ Multiple action penalties system
+- ❌ Variable modifier calculations based on inputs
 
 **Success Criteria:**
 - All views under 400 lines (section-based architecture)
@@ -58,8 +84,45 @@ This rebuild prioritizes:
 - Export/import works reliably
 - App performs well on iPhone SE through iPad Pro
 - Data model is CloudKit-ready (proper relationships, ownership patterns)
+- **Architecture enables Phase 2 features without refactoring core models**
 
-### Phase 2: CloudKit & Real-Time Collaboration (8-12 weeks, future)
+### Phase 2A: Advanced Effects System (6-8 weeks, future)
+**Primary Goal:** Add complex modifier calculations and per-page state management
+
+**Features:**
+- **Mode systems:**
+  - Named modes for effects (e.g., combat stance: Attack/Balanced/Defensive)
+  - Numeric inputs for variable effects (e.g., mental actions allocated to psi effect)
+  - Per-effect mode selection with different modifier sets per mode
+- **Mental action allocation:**
+  - Character has total mental action budget (base + modifiers from effects/gear)
+  - User allocates mental actions to active occult effects
+  - Validation prevents over-allocation
+  - Modifiers scale with allocated mental actions
+- **Multiple action system:**
+  - Character-level mode: 1, 2, or 3 general actions
+  - Automatic penalty calculation (-0/-3/-5 for baseline, modified by effects)
+  - Effects that reduce multiple action penalties (e.g., La Destreza maneuver)
+  - Physical/Mental/General action types with separate budgets
+- **Conditional modifiers:**
+  - Effects with conditional applicability (e.g., "+2 Tech when inventing")
+  - Per-goal-roll toggle for each applicable conditional
+  - Global state: toggling ON applies to all goal rolls with that conditional
+  - Visual flagging for goal rolls showing conditional-modified values
+- **Custom dashboard pages:**
+  - Create multiple custom pages (e.g., "Melee Combat", "Ranged Combat", "Social")
+  - Each page shows filtered subset of items (selected goal rolls, metrics, etc.)
+  - Per-page active state (different effects active on different pages)
+  - Per-page mode selections (different stances on melee vs ranged page)
+  - Dropdown menus for quick effect toggling on dashboard pages
+- **Advanced modifier display:**
+  - Full breakdown in detail view showing all contributing effects
+  - Separate display for base, permanent modifiers (benefices/afflictions), and toggleable effects
+  - Clear indication of mode-dependent and conditional modifiers
+
+**Note:** Phase 2A builds directly on Phase 1's modifier engine. The architecture from Phase 1 must enable these features without refactoring core models.
+
+### Phase 2B: CloudKit & Real-Time Collaboration (8-12 weeks, future)
 **Primary Goal:** Add multi-user campaigns with iCloud sync
 
 **Features:**
@@ -71,20 +134,21 @@ This rebuild prioritizes:
 - Conflict resolution for simultaneous edits
 - Offline queue management
 
-**Note:** Phase 2 is NOT in scope for initial development. Phase 1 architecture is designed to make Phase 2 easier, but we will NOT implement CloudKit until Phase 1 is complete and validated.
+**Note:** Phase 2B is independent of Phase 2A. Can be done in either order based on priority.
 
 ### Phase 3: Advanced Customization & macOS (6-8 weeks, future)
 **Primary Goal:** Full page builder and macOS optimization
 
 **Features:**
-- Drag-and-drop page designer
-- Custom styling and formatting options
+- Drag-and-drop page designer (beyond Phase 2A's filtered dashboards)
+- Multi-column custom layouts
+- Custom styling and formatting options per section
 - Multi-window support on macOS
 - Keyboard shortcuts and menu bar integration
 - Optimized layouts for large screens
 - Advanced filtering and organization
 
-**Note:** Phase 3 builds on Phase 1 & 2. Initial Phase 1 will support macOS with basic adaptive layouts, but advanced Mac features are deferred.
+**Note:** Phase 3 builds on Phase 1 & 2A. Initial Phase 1 will support macOS with basic adaptive layouts, but advanced Mac features are deferred.
 
 ## Platform Strategy: iOS First, macOS Later
 
@@ -145,13 +209,27 @@ This rebuild prioritizes:
 - **Optional relationships** - Templates are optional (character can have override-only instances)
 - **Ownership tracking** - Every template has a `templateScope` indicating local vs imported
 
-**CloudKit-Ready Design:**
-Even though Phase 1 is local-only, data models must follow CloudKit best practices:
+**Future-Ready Design Philosophy:**
+
+Even though Phase 1 implements simple features, data models must support Phase 2A complexity without refactoring:
+
+**CloudKit-Ready (Phase 2B):**
 - No unsupported types (only String, Int, Double, Bool, Date, Data, UUID)
 - Relationships use CloudKit-compatible patterns
 - Unique identifiers for all entities
 - Owner/creator tracking (even if not used in Phase 1)
 - Audit fields (createdDate, modifiedDate) for future sync
+
+**Phase 2A-Ready (Advanced Effects):**
+- Effect models include optional fields for modes (unused in Phase 1, populated in Phase 2A):
+  - `availableModes: [String]?` - Named modes (e.g., ["Attack", "Balanced", "Defensive"])
+  - `mentalActionScaling: Bool?` - Whether modifier scales with mental action input
+  - `conditionalDescription: String?` - Condition for applicability (e.g., "when inventing")
+- Modifier calculations use extensible pattern (can add conditional logic later)
+- CustomPage model exists in Phase 1 (stores section order) but gains per-page state in Phase 2A
+- Character model includes action budget fields (general/physical/mental) even if unused in Phase 1
+
+**Key Principle:** Add optional fields now, populate them later. Avoids breaking changes and data migrations.
 
 **Template System Architecture:**
 
@@ -501,6 +579,60 @@ CharacterSheet/
 - Character portraits and images
 - PDF export
 - Print layouts
+
+### Detailed Actions System (Phase 2A Feature)
+
+**Purpose:** Characters have limited actions per turn. Using multiple actions incurs global penalties.
+
+**Action Types:**
+- **General Actions** - Can be used for any action type (physical, mental, social, etc.)
+- **Physical Actions** - Bonus actions specifically for physical tasks
+- **Mental Actions** - Bonus actions specifically for mental/occult tasks
+
+**Multiple Action Penalties:**
+```
+Baseline Character (1 general action):
+- 1 action:  -0 global modifier
+- 2 actions: -3 global modifier
+- 3 actions: -5 global modifier
+
+With Effects/Gear:
+- Some maneuvers reduce penalties (e.g., La Destreza: if one action is melee, penalties become -0/-3 instead of -0/-3/-5)
+- Some effects add bonus actions (e.g., "+1 Physical Action" allows 2 physical + 1 general at -0)
+```
+
+**Mental Actions:**
+- Baseline character: 0 mental actions (must use general actions for occult effects)
+- Effects/gear can grant additional mental actions (e.g., "+2 Mental Actions")
+- Character allocates mental actions among active occult effects
+- **Budget enforcement:** System prevents allocating more mental actions than available
+
+**Implementation Requirements:**
+1. Character has base action values (general=1, physical=0, mental=0 by default)
+2. Effects/gear modify action budgets ("+1 Physical Action", "+2 Mental Actions")
+3. Character-level mode selection: Using 1, 2, or 3 general actions this turn
+4. Multiple action penalty automatically applied based on mode and active effects
+5. Mental action allocation UI with validation (can't exceed available)
+6. Real-time recalculation when effects activated/deactivated
+
+**Example Scenario:**
+```
+Character Stats:
+- Base: 1 general, 0 physical, 0 mental
+- Equipped: Powered Armor (+1 Physical Action)
+- Active: Psi Training (+2 Mental Actions)
+- Total: 1 general, 1 physical, 2 mental
+
+Turn Configuration:
+- Using: 3 general actions (penalty: -5)
+- Active maneuver: La Destreza (one action is melee, reduces penalty to -3)
+- Mental allocation: 2 actions to "Psi Shield" effect
+
+Result:
+- Can perform 3 general + 1 physical + 2 mental actions
+- Global modifier: -3 (instead of -5, due to La Destreza)
+- Psi Shield active with 2 mental actions allocated (modifier scales with input)
+```
 
 ### Phase 4+: Community Features
 - Public template marketplace
