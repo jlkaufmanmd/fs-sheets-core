@@ -138,13 +138,18 @@ quickening.modifiers = [initMod, defMod, dodgeMod]
 
 ### Stat Model
 
+**IMPORTANT:** Stats have user-defined baseValue. Display format: "base (effective)" when modified, "base" when not.
+
 ```swift
 @Model
 class Stat {
     var id: UUID
     var name: String
-    var baseValue: Int
+    var baseValue: Int  // User-defined
     var category: String  // "Attribute", "NaturalSkill", "LearnedSkill", "Lore", "Tongue"
+
+    // Note: Stats (except Attributes) should have optional description field
+    var description: String?  // REQUIRED for skills/lores/tongues, not for Attributes
 
     // Template reference (optional)
     var template: StatTemplate?
@@ -176,10 +181,20 @@ class Stat {
             .flatMap { $0.modifiers }
             .contains { $0.targetStat == self.name }
     }
+
+    var displayValue: String {
+        if hasModifiers {
+            return "\(baseValue) (\(effectiveValue))"
+        } else {
+            return "\(baseValue)"
+        }
+    }
 }
 ```
 
 ### Metric Model (Calculated Values)
+
+**IMPORTANT:** Metrics have hardcoded baseValue (from formula). Support VP modifiers just like Stats. Display format: Always show "effective" value only (not "base (effective)").
 
 ```swift
 @Model
@@ -187,6 +202,7 @@ class Metric {
     var id: UUID
     var name: String
     var formula: String  // e.g., "Defense = Dexterity + Fight + 3"
+    var description: String  // REQUIRED for all metrics
 
     // Ownership
     var character: Character
@@ -195,6 +211,7 @@ class Metric {
         self.id = UUID()
         self.name = name
         self.formula = formula
+        self.description = ""
         self.character = character
     }
 
@@ -207,12 +224,18 @@ class Metric {
 
     var effectiveValue: Int {
         let base = calculatedBase
+        // IMPORTANT: Metrics support VP modifiers just like Stats
         let modifierSum = character.activeEffects
             .flatMap { $0.modifiers }
             .filter { $0.targetStat == self.name }
             .map { $0.calculateModifier(character: character) }
             .reduce(0, +)
         return base + modifierSum
+    }
+
+    var displayValue: String {
+        // Always display effective value only (not "base (effective)")
+        return "\(effectiveValue)"
     }
 }
 ```
@@ -391,10 +414,9 @@ enum ContentType: String, CaseIterable, Codable {
     case tongue
 
     // Effects
-    case benefice
-    case affliction
-    case psiEffect
-    case theurgicalRitual
+    case innateQuality        // Benefices, Afflictions, Numinous Investments (always-on)
+    case psiEffect            // Psi Powers (toggleable)
+    case theurgicalRitual     // Theurgical Rituals (toggleable)
 
     // Combat & Actions
     case armedCombatManeuver
@@ -403,7 +425,6 @@ enum ContentType: String, CaseIterable, Codable {
 
     // Equipment
     case equipment
-    case numinousInvestment
 
     // Derived Values
     case goalRoll
@@ -416,15 +437,13 @@ enum ContentType: String, CaseIterable, Codable {
         case .learnedSkill: return "Learned Skills"
         case .lore: return "Lores"
         case .tongue: return "Tongues"
-        case .benefice: return "Benefices"
-        case .affliction: return "Afflictions"
+        case .innateQuality: return "Innate Qualities"
         case .psiEffect: return "Psi Powers"
         case .theurgicalRitual: return "Theurgical Rituals"
         case .armedCombatManeuver: return "Armed Combat Maneuvers"
         case .unarmedCombatManeuver: return "Unarmed Combat Maneuvers"
         case .rangedCombatManeuver: return "Ranged Combat Maneuvers"
         case .equipment: return "Equipment"
-        case .numinousInvestment: return "Numinous Investments"
         case .goalRoll: return "Goal Rolls"
         case .combatMetric: return "Combat Metrics"
         }
@@ -437,21 +456,21 @@ enum ContentType: String, CaseIterable, Codable {
         case .learnedSkill: return "book.fill"
         case .lore: return "scroll.fill"
         case .tongue: return "bubble.left.and.bubble.right.fill"
-        case .benefice: return "plus.circle.fill"
-        case .affliction: return "minus.circle.fill"
+        case .innateQuality: return "person.badge.plus.fill"
         case .psiEffect: return "sparkles"
         case .theurgicalRitual: return "flame.fill"
         case .armedCombatManeuver: return "figure.fencing"
         case .unarmedCombatManeuver: return "figure.martial.arts"
         case .rangedCombatManeuver: return "scope"
         case .equipment: return "backpack.fill"
-        case .numinousInvestment: return "crown.fill"
         case .goalRoll: return "target"
         case .combatMetric: return "shield.fill"
         }
     }
 }
 ```
+
+**Note:** Innate Qualities combine benefices (beneficial), afflictions (harmful), and numinous investments. They are identical in structure—always-on, permanent effects—only differing in whether the effect is beneficial or harmful.
 
 ---
 
